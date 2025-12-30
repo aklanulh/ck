@@ -37,7 +37,7 @@
                 </a>
                 
                 <!-- Catatan Kerja Button -->
-                <a href="http://127.0.0.1:8000/absensi" class="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                <a href="/absensi" class="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
                     <i class="fas fa-briefcase mr-2"></i>
                     <span class="font-medium">Catatan Kerja</span>
                 </a>
@@ -68,7 +68,7 @@
             <!-- Mobile Menu Button -->
             <div class="lg:hidden flex items-center space-x-2">
                 <!-- Catatan Kerja Button Mobile -->
-                <a href="http://127.0.0.1:8000/absensi" class="flex items-center px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs">
+                <a href="/absensi" class="flex items-center px-2 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs">
                     <i class="fas fa-briefcase mr-1"></i>
                     <span class="font-medium">Catatan Kerja</span>
                 </a>
