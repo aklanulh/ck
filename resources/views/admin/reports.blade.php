@@ -94,7 +94,7 @@
             <thead class="bg-gray-50">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pengguna</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lokasi</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
@@ -118,7 +118,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900">
-                                <a href="/admin/reports/{{ $report->id }}" class="hover:text-blue-600">{{ $report->title }}</a>
+                                {{ $report->lokasi }}
                             </div>
                             <div class="text-xs text-gray-500 mt-1">{{ Str::limit($report->content, 100) }}</div>
                         </td>
@@ -254,62 +254,63 @@ function showReportDetail(reportId) {
 function displayReportDetail(report) {
     const content = `
         <div class="space-y-4">
-            <!-- Report Header -->
-            <div class="bg-gray-50 rounded-lg p-4">
-                <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-xl font-semibold text-gray-900">${report.title}</h4>
-                    <span class="px-3 py-1 text-sm font-medium rounded-full 
-                        ${report.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                        ${report.status === 'published' ? 'Published' : 'Draft'}
-                    </span>
+            <div class="flex items-center justify-between">
+                <h4 class="text-lg font-semibold text-gray-900">Detail Laporan</h4>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                    ${report.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+                    <i class="fas fa-${report.status === 'published' ? 'check-circle' : 'edit'} mr-1"></i>
+                    ${report.status === 'published' ? 'Published' : 'Draft'}
+                </span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Tanggal</label>
+                    <p class="text-gray-900">${report.tanggal}</p>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <span class="text-gray-500">Pengguna:</span>
-                        <span class="ml-2 font-medium">${report.user.name}</span>
-                    </div>
-                    <div>
-                        <span class="text-gray-500">Email:</span>
-                        <span class="ml-2 font-medium">${report.user.email}</span>
-                    </div>
-                    <div>
-                        <span class="text-gray-500">Tanggal:</span>
-                        <span class="ml-2 font-medium">${report.tanggal}</span>
-                    </div>
-                    <div>
-                        <span class="text-gray-500">Lokasi:</span>
-                        <span class="ml-2 font-medium">${report.lokasi}</span>
-                    </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Lokasi</label>
+                    <p class="text-gray-900">${report.lokasi}</p>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-500">Pengguna</label>
+                    <p class="text-gray-900">${report.user.name}</p>
                 </div>
             </div>
-
-            <!-- Report Content -->
-            <div class="bg-white rounded-lg border p-4">
-                <h5 class="text-lg font-medium text-gray-900 mb-3">Laporan Pekerjaan</h5>
-                <div class="bg-gray-50 rounded-lg p-4 whitespace-pre-wrap text-gray-700">${report.laporan}</div>
+            
+            <div>
+                <label class="text-sm font-medium text-gray-500">Laporan Pekerjaan</label>
+                <div class="mt-1 p-3 bg-gray-50 rounded-lg">
+                    <p class="text-gray-900 whitespace-pre-wrap">${report.laporan}</p>
+                </div>
             </div>
-
+            
             ${report.masalah ? `
-            <div class="bg-white rounded-lg border p-4">
-                <h5 class="text-lg font-medium text-red-900 mb-3">Masalah yang Dihadapi</h5>
-                <div class="bg-red-50 rounded-lg p-4 whitespace-pre-wrap text-red-700">${report.masalah}</div>
+            <div>
+                <label class="text-sm font-medium text-gray-500">Masalah yang Dihadapi</label>
+                <div class="mt-1 p-3 bg-red-50 rounded-lg">
+                    <p class="text-red-900 whitespace-pre-wrap">${report.masalah}</p>
+                </div>
             </div>
             ` : ''}
-
+            
             ${report.solusi ? `
-            <div class="bg-white rounded-lg border p-4">
-                <h5 class="text-lg font-medium text-green-900 mb-3">Solusi yang Dilakukan</h5>
-                <div class="bg-green-50 rounded-lg p-4 whitespace-pre-wrap text-green-700">${report.solusi}</div>
+            <div>
+                <label class="text-sm font-medium text-gray-500">Solusi yang Dilakukan</label>
+                <div class="mt-1 p-3 bg-green-50 rounded-lg">
+                    <p class="text-green-900 whitespace-pre-wrap">${report.solusi}</p>
+                </div>
             </div>
             ` : ''}
-
-            <!-- Action Buttons -->
-            <div class="flex justify-end space-x-3 pt-4 border-t">
-                <button onclick="exportToPDF(${report.id})" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+            
+            <div class="text-sm text-gray-500">
+                <i class="fas fa-clock mr-1"></i>
+                Dibuat: ${report.created_at}
+            </div>
+            
+            <div class="flex justify-end">
+                <button onclick="exportToPDF(${report.id})" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
                     <i class="fas fa-file-pdf mr-2"></i>Export PDF
-                </button>
-                <button onclick="closeReportDetailModal()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                    <i class="fas fa-times mr-2"></i>Tutup
                 </button>
             </div>
         </div>
