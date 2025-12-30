@@ -24,7 +24,6 @@ class CalendarController extends Controller
             ->whereMonth('tanggal_kunjungan', now()->month)
             ->whereYear('tanggal_kunjungan', now()->year)
             ->orderBy('tanggal_kunjungan')
-            ->orderBy('waktu_mulai')
             ->get();
 
         // Get statistics

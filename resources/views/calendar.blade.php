@@ -231,15 +231,9 @@
                             <i class="fas fa-clock text-purple-600 text-xl"></i>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Rata-rata Durasi</p>
+                            <p class="text-sm font-medium text-gray-500">Total Jadwal</p>
                             <p class="text-2xl font-bold text-gray-900">
-                                @if($schedules->count() > 0)
-                                    {{ number_format($schedules->avg(function($s) { 
-                                        return \Carbon\Carbon::parse($s->waktu_selesai)->diffInMinutes(\Carbon\Carbon::parse($s->waktu_mulai)); 
-                                    }), 0) }} menit
-                                @else
-                                    0 menit
-                                @endif
+                                {{ $schedules->count() }} jadwal
                             </p>
                         </div>
                     </div>
