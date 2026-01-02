@@ -29,9 +29,20 @@ Upload semua file dan folder kecuali:
    -- Jalankan migration via SSH atau phpMyAdmin
    ```
 
-### 4. Folder Permissions
+### 4. Folder Permissions dan Storage Setup
 Set permissions berikut via File Manager atau SSH:
 ```bash
+# Buat folder storage yang diperlukan
+mkdir -p public/storage/photos
+mkdir -p storage/logs
+mkdir -p storage/framework/cache
+mkdir -p storage/framework/sessions
+mkdir -p storage/framework/views
+mkdir -p bootstrap/cache
+
+# Set permissions
+chmod 755 public/storage/
+chmod 755 public/storage/photos/
 chmod 755 storage/
 chmod 755 storage/logs/
 chmod 755 storage/framework/
@@ -55,24 +66,28 @@ php artisan key:generate
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
-php artisan storage:link
+# Tidak perlu php artisan storage:link karena kita menggunakan direct storage
 ```
 
 ## Struktur Folder di Hostinger
 ```
-public_html/
+public_html/ck/
 ├── app/
 ├── bootstrap/
 ├── config/
 ├── database/
-├── public/ (ini adalah root folder web)
+├── public/ (ini adalah root folder web untuk subdomain)
+│   ├── storage/
+│   │   └── photos/    ← Foto akan disimpan di sini
+│   ├── index.php
+│   └── ...
 ├── resources/
 ├── routes/
 ├── storage/
 ├── vendor/
 ├── .env
 ├── artisan
-└── index.php
+└── ...
 ```
 
 ## Notes Penting
@@ -85,4 +100,12 @@ public_html/
 ## Troubleshooting
 - 500 Error: Check file permissions dan .env configuration
 - Database Error: Verify database credentials dan connection
-- Asset 404: Jalankan `php artisan storage:link` dan `npm run build`
+- Asset 404: Jalankan `npm run build` dan pastikan path storage benar
+- Foto tidak muncul: Pastikan folder `public/storage/photos` ada dan permissions 755
+- Foto tidak tersimpan: Check bahwa `public/storage/` writable dan path sesuai
+
+## Storage Configuration untuk Subdomain
+Untuk subdomain `ck.msapt.co.id` dengan path `public_html/ck/public`:
+- Foto disimpan di: `public_html/ck/public/storage/photos/`
+- URL foto: `https://ck.msapt.co.id/storage/photos/[filename]`
+- Tidak perlu symbolic link, langsung menyimpan ke public folder
