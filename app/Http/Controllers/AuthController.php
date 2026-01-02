@@ -412,6 +412,7 @@ class AuthController extends Controller
             'laporan' => 'required|string|max:2000',
             'masalah' => 'nullable|string|max:1000',
             'solusi' => 'nullable|string|max:1000',
+            'photo_evidence' => 'nullable|json',
         ]);
 
         try {
@@ -432,6 +433,7 @@ class AuthController extends Controller
                     'laporan' => $request->laporan,
                     'masalah' => $request->masalah,
                     'solusi' => $request->solusi,
+                    'photo_evidence' => $request->photo_evidence ? json_decode($request->photo_evidence) : null,
                     'status' => 'submitted',
                     'submitted_at' => now(),
                 ]);
@@ -449,6 +451,7 @@ class AuthController extends Controller
                     'laporan' => $request->laporan,
                     'masalah' => $request->masalah,
                     'solusi' => $request->solusi,
+                    'photo_evidence' => $request->photo_evidence ? json_decode($request->photo_evidence) : null,
                     'status' => 'submitted',
                     'submitted_at' => now(),
                 ]);
@@ -472,7 +475,7 @@ class AuthController extends Controller
     {
         // Debug: Log request
         \Log::info('saveDraft called', ['request' => $request->all()]);
-        
+
         $user = session('user');
         if (!$user) {
             \Log::error('User not authenticated in saveDraft');
@@ -487,6 +490,7 @@ class AuthController extends Controller
             'laporan' => 'required|string|max:2000',
             'masalah' => 'nullable|string|max:1000',
             'solusi' => 'nullable|string|max:1000',
+            'photo_evidence' => 'nullable|json',
         ]);
 
         \Log::info('Validation passed');
@@ -509,6 +513,7 @@ class AuthController extends Controller
                     'laporan' => $request->laporan,
                     'masalah' => $request->masalah,
                     'solusi' => $request->solusi,
+                    'photo_evidence' => $request->photo_evidence ? json_decode($request->photo_evidence) : null,
                 ]);
 
                 \Log::info('Draft updated successfully');
@@ -526,6 +531,7 @@ class AuthController extends Controller
                     'laporan' => $request->laporan,
                     'masalah' => $request->masalah,
                     'solusi' => $request->solusi,
+                    'photo_evidence' => $request->photo_evidence ? json_decode($request->photo_evidence) : null,
                     'status' => 'draft',
                 ]);
 

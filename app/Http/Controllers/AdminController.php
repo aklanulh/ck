@@ -280,7 +280,7 @@ class AdminController extends Controller
             return redirect('/absensi')->with('error', 'Anda tidak memiliki akses ke halaman admin.');
         }
 
-        $reports = Report::with('user')->latest()->paginate(20);
+        $reports = Report::with('user')->where('status', '!=', 'draft')->latest()->paginate(20);
         return view('admin.reports', compact('reports'));
     }
 

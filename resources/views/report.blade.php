@@ -15,9 +15,9 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <div class="bg-purple-600 rounded-lg p-2">
+                        <a href="{{ route('absensi') }}" class="block bg-purple-600 rounded-lg p-2 hover:bg-purple-700 transition-colors">
                             <i class="fas fa-briefcase text-white text-xl"></i>
-                        </div>
+                        </a>
                     </div>
                     <div class="ml-3 sm:ml-4">
                         <h1 class="text-lg sm:text-xl font-bold text-gray-900">Catatan Kerja MSA</h1>
@@ -34,6 +34,11 @@
                             <span class="text-sm font-medium">Panel CK MSA</span>
                         </a>
                     @endif
+                    
+                    <!-- Absensi Menu -->
+                    <a href="{{ route('absensi') }}" class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium flex items-center">
+                        <i class="fas fa-clock mr-2"></i>Absensi
+                    </a>
                     
                     <!-- Daily Report Menu -->
                     <a href="{{ route('report') }}" class="py-4 px-1 border-b-2 border-purple-500 text-purple-600 font-medium flex items-center">
@@ -83,6 +88,11 @@
         <!-- Mobile menu -->
         <div id="mobileMenu" class="hidden md:hidden bg-white border-t">
             <div class="px-4 py-3 space-y-2">
+                <!-- Absensi Mobile Menu -->
+                <a href="{{ route('absensi') }}" class="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i class="fas fa-clock mr-2"></i>Absensi
+                </a>
+                
                 <!-- Daily Report Mobile Menu -->
                 <a href="{{ route('report') }}" class="block py-2 px-3 text-purple-600 bg-purple-50 rounded-lg transition-colors">
                     <i class="fas fa-file-alt mr-2"></i>Daily Report
@@ -174,14 +184,14 @@
                             <i class="fas fa-calendar mr-2 text-gray-400"></i>Tanggal Laporan
                         </label>
                         <input 
-                            type="date" 
+                            type="text" 
                             id="tanggal" 
                             name="tanggal"
-                            value="{{ $todayAttendance?->tanggal ?? now()->format('Y-m-d') }}"
-                            max="{{ now()->format('Y-m-d') }}"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            value="{{ now()->format('d F Y') }}"
+                            readonly
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed"
                             required>
-                        <p class="text-xs text-gray-500 mt-1">Pilih tanggal untuk laporan yang akan dibuat</p>
+                        <p class="text-xs text-gray-500 mt-1">Laporan dibuat untuk hari ini</p>
                     </div>
 
                     <!-- Manual Location -->
@@ -189,14 +199,19 @@
                         <label for="lokasi" class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-map-marker-alt mr-2 text-gray-400"></i>Lokasi Kerja
                         </label>
-                        <input 
-                            type="text" 
-                            id="lokasi" 
-                            name="lokasi"
-                            placeholder="Masukkan lokasi kerja Anda"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                            required>
-                        <p class="text-xs text-gray-500 mt-1">Masukkan lokasi tempat Anda bekerja</p>
+                        <div class="flex space-x-2">
+                            <input 
+                                type="text" 
+                                id="lokasi" 
+                                name="lokasi"
+                                placeholder="Masukkan lokasi kerja Anda"
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                required>
+                            <button type="button" onclick="getCurrentLocation()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition">
+                                <i class="fas fa-location-arrow mr-2"></i>Detect Lokasi
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Masukkan lokasi tempat Anda bekerja atau gunakan deteksi otomatis</p>
                     </div>
 
                     <!-- Report Content -->
@@ -254,6 +269,48 @@
                         </div>
                     </div>
 
+                    <!-- Camera Evidence Section -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-camera mr-2 text-gray-400"></i>Bukti Foto (Opsional)
+                        </label>
+                        
+                        <!-- Camera Section -->
+                        <div class="space-y-4">
+                            <!-- Camera View -->
+                            <div id="cameraSection" class="hidden">
+                                <div class="relative bg-black rounded-lg overflow-hidden" style="max-width: 640px;">
+                                    <video id="cameraVideo" class="w-full" autoplay playsinline></video>
+                                    <div class="absolute top-2 right-2 bg-black bg-opacity-75 text-white px-3 py-2 rounded-lg text-sm font-medium" id="cameraTimestamp"></div>
+                                </div>
+                                <div class="mt-3 flex space-x-3">
+                                    <button type="button" onclick="capturePhoto()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition">
+                                        <i class="fas fa-camera mr-2"></i>Ambil Foto
+                                    </button>
+                                    <button type="button" onclick="stopCamera()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition">
+                                        <i class="fas fa-stop mr-2"></i>Stop Kamera
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Start Camera Button -->
+                            <div id="startCameraSection">
+                                <button type="button" onclick="startCamera()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition">
+                                    <i class="fas fa-video mr-2"></i>Buka Kamera
+                                </button>
+                            </div>
+
+                            <!-- Captured Photos -->
+                            <div id="capturedPhotos" class="space-y-3">
+                                <!-- Photos will be added here dynamically -->
+                            </div>
+
+                            <!-- Hidden input to store photo data -->
+                            <input type="hidden" id="photoEvidence" name="photo_evidence" value="">
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Ambil foto sebagai bukti pelaksanaan pekerjaan (opsional)</p>
+                    </div>
+
                     <!-- Action Buttons -->
                     <div class="flex items-center justify-between">
                         <div class="text-sm text-gray-500">
@@ -274,37 +331,29 @@
     </main>
 
     <script>
+        // Camera variables
+        let stream = null;
+        let capturedPhotos = [];
+        let photoIdCounter = 0;
+        let currentLocation = null;
+
         // Load draft data if available
         function loadDraftData() {
             const draftData = sessionStorage.getItem('editDraft');
             if (draftData) {
                 const draft = JSON.parse(draftData);
                 
-                // Convert date format from "d F Y" to "Y-m-d" for input field
-                let tanggalInput = draft.tanggal;
-                if (tanggalInput && tanggalInput.includes(' ')) {
-                    // Parse Indonesian date format "d F Y" and convert to "Y-m-d"
-                    const months = {
-                        'Januari': '01', 'Februari': '02', 'Maret': '03', 'April': '04',
-                        'Mei': '05', 'Juni': '06', 'Juli': '07', 'Agustus': '08',
-                        'September': '09', 'Oktober': '10', 'November': '11', 'Desember': '12'
-                    };
-                    
-                    const parts = tanggalInput.split(' ');
-                    if (parts.length === 3) {
-                        const day = parts[0].padStart(2, '0');
-                        const month = months[parts[1]] || '01';
-                        const year = parts[2];
-                        tanggalInput = `${year}-${month}-${day}`;
-                    }
-                }
-                
-                // Populate form fields with draft data
-                document.getElementById('tanggal').value = tanggalInput;
+                // Populate form fields with draft data (except tanggal which is always today)
                 document.getElementById('lokasi').value = draft.lokasi;
                 document.getElementById('laporan').value = draft.laporan;
                 document.getElementById('masalah').value = draft.masalah || '';
                 document.getElementById('solusi').value = draft.solusi || '';
+                
+                // Load photo evidence if exists
+                if (draft.photo_evidence) {
+                    capturedPhotos = JSON.parse(draft.photo_evidence);
+                    displayCapturedPhotos();
+                }
                 
                 // Update character counters
                 updateLaporanCount();
@@ -319,8 +368,215 @@
             }
         }
 
+        // Camera functions
+        async function startCamera() {
+            try {
+                // Request camera access
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                });
+                
+                // Show camera section
+                document.getElementById('cameraSection').classList.remove('hidden');
+                document.getElementById('startCameraSection').classList.add('hidden');
+                
+                // Start video stream
+                const video = document.getElementById('cameraVideo');
+                video.srcObject = stream;
+                
+                // Update timestamp
+                updateCameraTimestamp();
+                setInterval(updateCameraTimestamp, 1000);
+                
+                showNotification('Kamera berhasil dibuka', 'success');
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                showNotification('Tidak dapat mengakses kamera. Pastikan izin kamera diaktifkan.', 'error');
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            document.getElementById('cameraSection').classList.add('hidden');
+            document.getElementById('startCameraSection').classList.remove('hidden');
+            
+            showNotification('Kamera ditutup', 'info');
+        }
+
+        function updateCameraTimestamp() {
+            const timestampElement = document.getElementById('cameraTimestamp');
+            if (timestampElement) {
+                const now = new Date();
+                const lokasi = document.getElementById('lokasi').value || 'Lokasi tidak diketahui';
+                const dateTimeString = now.toLocaleString('id-ID');
+                timestampElement.textContent = `${dateTimeString} | ${lokasi}`;
+            }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0);
+            
+            // Add timestamp with location to photo
+            const timestamp = new Date();
+            const lokasi = document.getElementById('lokasi').value || 'Lokasi tidak diketahui';
+            const dateTimeString = timestamp.toLocaleString('id-ID');
+            const timestampText = `${dateTimeString} | ${lokasi}`;
+            
+            // Configure timestamp style
+            context.font = 'bold 14px Arial';
+            context.fillStyle = 'white';
+            context.strokeStyle = 'black';
+            context.lineWidth = 3;
+            context.textAlign = 'right';
+            
+            // Add timestamp with outline for better visibility
+            const x = canvas.width - 10;
+            const y = canvas.height - 10;
+            context.strokeText(timestampText, x, y);
+            context.fillText(timestampText, x, y);
+            
+            // Convert to base64
+            const photoData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Add to captured photos
+            const photoId = ++photoIdCounter;
+            const photo = {
+                id: photoId,
+                data: photoData,
+                timestamp: timestamp.toISOString(),
+                timestampText: timestampText,
+                lokasi: lokasi
+            };
+            
+            capturedPhotos.push(photo);
+            displayCapturedPhotos();
+            updatePhotoEvidenceInput();
+            
+            showNotification('Foto berhasil ditangkap', 'success');
+        }
+
+        function displayCapturedPhotos() {
+            const container = document.getElementById('capturedPhotos');
+            container.innerHTML = '';
+            
+            capturedPhotos.forEach(photo => {
+                const photoDiv = document.createElement('div');
+                photoDiv.className = 'flex items-center space-x-3 p-3 bg-gray-50 rounded-lg';
+                photoDiv.innerHTML = `
+                    <img src="${photo.data}" alt="Bukti foto" class="w-20 h-20 object-cover rounded-lg">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-900">Foto Bukti</p>
+                        <p class="text-xs text-gray-500">${photo.timestampText}</p>
+                        <p class="text-xs text-gray-400">📍 ${photo.lokasi}</p>
+                    </div>
+                    <button type="button" onclick="removePhoto(${photo.id})" class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                container.appendChild(photoDiv);
+            });
+        }
+
+        function removePhoto(photoId) {
+            capturedPhotos = capturedPhotos.filter(photo => photo.id !== photoId);
+            displayCapturedPhotos();
+            updatePhotoEvidenceInput();
+            showNotification('Foto dihapus', 'info');
+        }
+
+        function updatePhotoEvidenceInput() {
+            const input = document.getElementById('photoEvidence');
+            input.value = JSON.stringify(capturedPhotos);
+        }
+
         // Load draft data on page load
-        document.addEventListener('DOMContentLoaded', loadDraftData);
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDraftData();
+            // Try to get current location automatically
+            setTimeout(getCurrentLocation, 1000);
+        });
+
+        // Get current location
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        currentLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        };
+                        
+                        // Try to get address from coordinates (using reverse geocoding)
+                        getAddressFromCoordinates(currentLocation.lat, currentLocation.lng);
+                    },
+                    function(error) {
+                        console.error('Error getting location:', error);
+                        // If geolocation fails, try IP-based location
+                        getLocationFromIP();
+                    }
+                );
+            } else {
+                // If geolocation not supported, try IP-based location
+                getLocationFromIP();
+            }
+        }
+
+        // Get address from coordinates using reverse geocoding
+        function getAddressFromCoordinates(lat, lng) {
+            // Using Nominatim (OpenStreetMap) for reverse geocoding
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=id`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.display_name) {
+                        const locationInput = document.getElementById('lokasi');
+                        if (!locationInput.value) {
+                            locationInput.value = data.display_name;
+                            updateCameraTimestamp();
+                            showNotification('Lokasi berhasil dideteksi secara otomatis', 'success');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error getting address:', error);
+                    getLocationFromIP();
+                });
+        }
+
+        // Get location from IP as fallback
+        function getLocationFromIP() {
+            fetch('https://ipapi.co/json/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.city && data.country_name) {
+                        const locationInput = document.getElementById('lokasi');
+                        if (!locationInput.value) {
+                            const location = `${data.city}, ${data.region}, ${data.country_name}`;
+                            locationInput.value = location;
+                            updateCameraTimestamp();
+                            showNotification('Lokasi berhasil dideteksi berdasarkan IP', 'info');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error getting IP location:', error);
+                    showNotification('Tidak dapat mendeteksi lokasi otomatis. Silakan masukkan lokasi secara manual.', 'warning');
+                });
+        }
 
         // Update character counts
         function updateLaporanCount() {
@@ -373,11 +629,12 @@
             // Create new form data for draft
             const draftData = new FormData();
             draftData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-            draftData.append('tanggal', document.getElementById('tanggal').value);
+            draftData.append('tanggal', '{{ now()->format('d F Y') }}');
             draftData.append('lokasi', document.getElementById('lokasi').value);
             draftData.append('laporan', document.getElementById('laporan').value);
             draftData.append('masalah', document.getElementById('masalah').value);
             draftData.append('solusi', document.getElementById('solusi').value);
+            draftData.append('photo_evidence', document.getElementById('photoEvidence').value);
             
             fetch('{{ route("report.saveDraft") }}', {
                 method: 'POST',
@@ -428,8 +685,7 @@
             }
             
             // Show confirmation dialog
-            const tanggal = document.getElementById('tanggal').value;
-            const confirmMessage = `Apakah Anda yakin ingin mengirim laporan untuk tanggal ${tanggal}?\n\nLaporan yang sudah dikirim tidak dapat diedit kembali.`;
+            const confirmMessage = `Apakah Anda yakin ingin mengirim laporan untuk hari ini?\n\nLaporan yang sudah dikirim tidak dapat diedit kembali.`;
             
             if (!confirm(confirmMessage)) {
                 return false;
@@ -510,6 +766,7 @@
             document.getElementById('laporan').addEventListener('input', updateLaporanCount);
             document.getElementById('masalah').addEventListener('input', updateMasalahCount);
             document.getElementById('solusi').addEventListener('input', updateSolusiCount);
+            document.getElementById('lokasi').addEventListener('input', updateCameraTimestamp);
         });
 
         // Toggle mobile menu
@@ -517,6 +774,18 @@
             const menu = document.getElementById('mobileMenu');
             menu.classList.toggle('hidden');
         }
+
+        // Cleanup camera when page unloads
+        window.addEventListener('beforeunload', function() {
+            stopCamera();
+        });
+
+        // Cleanup camera when navigating away
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopCamera();
+            }
+        });
     </script>
 </body>
 </html>

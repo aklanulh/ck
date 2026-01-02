@@ -67,9 +67,9 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <div class="bg-purple-600 rounded-lg p-2">
+                        <a href="{{ route('absensi') }}" class="block bg-purple-600 rounded-lg p-2 hover:bg-purple-700 transition-colors">
                             <i class="fas fa-briefcase text-white text-xl"></i>
-                        </div>
+                        </a>
                     </div>
                     <div class="ml-3 sm:ml-4">
                         <h1 class="text-lg sm:text-xl font-bold text-gray-900">Catatan Kerja MSA</h1>
@@ -86,6 +86,11 @@
                             <span class="text-sm font-medium">Panel CK MSA</span>
                         </a>
                     @endif
+                    
+                    <!-- Absensi Menu -->
+                    <a href="{{ route('absensi') }}" class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium flex items-center">
+                        <i class="fas fa-clock mr-2"></i>Absensi
+                    </a>
                     
                     <!-- Daily Report Menu -->
                     <a href="{{ route('report') }}" class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium flex items-center">
@@ -135,6 +140,11 @@
         <!-- Mobile menu -->
         <div id="mobileMenu" class="hidden md:hidden bg-white border-t">
             <div class="px-4 py-3 space-y-2">
+                <!-- Absensi Mobile Menu -->
+                <a href="{{ route('absensi') }}" class="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i class="fas fa-clock mr-2"></i>Absensi
+                </a>
+                
                 <!-- Daily Report Mobile Menu -->
                 <a href="{{ route('report') }}" class="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                     <i class="fas fa-file-alt mr-2"></i>Daily Report

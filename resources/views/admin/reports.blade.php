@@ -21,19 +21,17 @@
     <div class="flex flex-col sm:flex-row gap-3">
         <div class="relative">
             <input type="text" id="searchInput" placeholder="Cari laporan..." 
-                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent w-full sm:w-64">
+                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent w-full sm:w-64"
+                   autocomplete="off" 
+                   readonly 
+                   onfocus="this.removeAttribute('readonly')">
             <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
         </div>
-        <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
-            <option value="">Semua Status</option>
-            <option value="draft">Draft</option>
-            <option value="published">Published</option>
-        </select>
     </div>
 </div>
 
 <!-- Statistics Cards -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
     <div class="bg-white rounded-lg shadow p-4 sm:p-6">
         <div class="flex items-center">
             <div class="flex-shrink-0 bg-blue-100 rounded-lg p-2 sm:p-3">
@@ -41,19 +39,7 @@
             </div>
             <div class="ml-3 sm:ml-4">
                 <p class="text-xs sm:text-sm font-medium text-gray-500">Total Laporan</p>
-                <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ $reports->count() }}</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="bg-white rounded-lg shadow p-4 sm:p-6">
-        <div class="flex items-center">
-            <div class="flex-shrink-0 bg-yellow-100 rounded-lg p-2 sm:p-3">
-                <i class="fas fa-edit text-yellow-600 text-lg sm:text-xl"></i>
-            </div>
-            <div class="ml-3 sm:ml-4">
-                <p class="text-xs sm:text-sm font-medium text-gray-500">Draft</p>
-                <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ \App\Models\Report::where('status', 'draft')->count() }}</p>
+                <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ \App\Models\Report::where('status', '!=', 'draft')->count() }}</p>
             </div>
         </div>
     </div>
@@ -77,7 +63,7 @@
             </div>
             <div class="ml-3 sm:ml-4">
                 <p class="text-xs sm:text-sm font-medium text-gray-500">Bulan Ini</p>
-                <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ \App\Models\Report::whereMonth('created_at', now()->month)->count() }}</p>
+                <p class="text-xl sm:text-2xl font-bold text-gray-900">{{ \App\Models\Report::where('status', '!=', 'draft')->whereMonth('created_at', now()->month)->count() }}</p>
             </div>
         </div>
     </div>
@@ -102,7 +88,7 @@
             </thead>
             <tbody class="bg-white divide-y divide-gray-200" id="reportsTableBody">
                 @forelse($reports as $report)
-                    <tr class="report-row" data-title="{{ strtolower($report->title) }}" data-user="{{ strtolower($report->user->name) }}" data-status="{{ $report->status }}">
+                    <tr class="report-row hover:bg-gray-50 cursor-pointer" data-title="{{ strtolower($report->title) }}" data-user="{{ strtolower($report->user->name) }}" data-status="{{ $report->status }}" onclick="showReportDetail({{ $report->id }})">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10">
@@ -133,14 +119,9 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div class="flex space-x-2">
-                                <button onclick="showReportDetail({{ $report->id }})" class="text-blue-600 hover:text-blue-900">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button onclick="deleteReport({{ $report->id }}, '{{ $report->title }}')" class="text-red-600 hover:text-red-900">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
+                            <button onclick="event.stopPropagation(); deleteReport({{ $report->id }}, '{{ $report->title }}')" class="text-red-600 hover:text-red-900">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </td>
                     </tr>
                 @empty
@@ -190,6 +171,18 @@
                 <div class="mt-2 px-7 py-3">
                     <p class="text-sm text-gray-500">Apakah Anda yakin ingin menghapus laporan <strong id="deleteReportTitle"></strong>?</p>
                     <p class="text-xs text-red-600 mt-2">Tindakan ini tidak dapat dibatalkan!</p>
+                    
+                    <div class="mt-4">
+                        <label for="deletePassword" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-lock mr-1 text-gray-400"></i>Masukkan Password
+                        </label>
+                        <input 
+                            type="password" 
+                            id="deletePassword" 
+                            placeholder="Masukkan password untuk konfirmasi"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                            required>
+                    </div>
                 </div>
                 <div class="flex gap-3 mt-4">
                     <button onclick="closeDeleteModal()" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
@@ -230,6 +223,7 @@ function deleteReport(reportId, reportTitle) {
 
 function closeDeleteModal() {
     document.getElementById('deleteModal').classList.add('hidden');
+    document.getElementById('deletePassword').value = '';
     deleteReportId = null;
 }
 
@@ -438,6 +432,20 @@ function exportToPDF(reportId) {
 
 document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
     if (deleteReportId) {
+        // Get password from input field
+        const password = document.getElementById('deletePassword').value;
+        
+        // Validate password
+        if (!password) {
+            alert('Password harus diisi untuk menghapus laporan!');
+            return;
+        }
+        
+        if (password.length < 6) {
+            alert('Password minimal 6 karakter!');
+            return;
+        }
+        
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '/admin/reports/' + deleteReportId;
@@ -453,8 +461,15 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', function()
         methodInput.name = '_method';
         methodInput.value = 'DELETE';
         
+        // Add password to form
+        const passwordInput = document.createElement('input');
+        passwordInput.type = 'hidden';
+        passwordInput.name = 'delete_password';
+        passwordInput.value = password;
+        
         form.appendChild(csrfInput);
         form.appendChild(methodInput);
+        form.appendChild(passwordInput);
         document.body.appendChild(form);
         form.submit();
     }
@@ -463,40 +478,15 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', function()
 // Search functionality
 document.getElementById('searchInput').addEventListener('input', function(e) {
     const searchTerm = e.target.value.toLowerCase();
-    const statusFilter = document.getElementById('statusFilter').value;
     const rows = document.querySelectorAll('.report-row');
     
     rows.forEach(row => {
         const title = row.dataset.title;
         const user = row.dataset.user;
-        const status = row.dataset.status;
         
         const matchesSearch = title.includes(searchTerm) || user.includes(searchTerm);
-        const matchesStatus = !statusFilter || status === statusFilter;
         
-        if (matchesSearch && matchesStatus) {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    });
-});
-
-// Status filter
-document.getElementById('statusFilter').addEventListener('change', function(e) {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const statusFilter = e.target.value;
-    const rows = document.querySelectorAll('.report-row');
-    
-    rows.forEach(row => {
-        const title = row.dataset.title;
-        const user = row.dataset.user;
-        const status = row.dataset.status;
-        
-        const matchesSearch = title.includes(searchTerm) || user.includes(searchTerm);
-        const matchesStatus = !statusFilter || status === statusFilter;
-        
-        if (matchesSearch && matchesStatus) {
+        if (matchesSearch) {
             row.style.display = '';
         } else {
             row.style.display = 'none';

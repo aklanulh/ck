@@ -15,6 +15,7 @@ class Report extends Model
         'laporan',
         'masalah',
         'solusi',
+        'photo_evidence',
         'status',
         'submitted_at',
     ];
@@ -22,6 +23,7 @@ class Report extends Model
     protected $casts = [
         'tanggal' => 'date',
         'submitted_at' => 'datetime',
+        'photo_evidence' => 'array',
     ];
 
     public function user()
