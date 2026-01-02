@@ -105,13 +105,13 @@ public_html/ck/
 - Foto tidak tersimpan: Check bahwa `public/storage/` writable dan path sesuai
 
 ## Storage Configuration untuk Subdomain
-Untuk subdomain `ck.msapt.co.id` dengan path `public_html/ck/public`:
+Untuk subdomain `ck.msapt.co.id` dengan path `public_html/ck/`:
+- Document root: `public_html/ck/` (bukan `public_html/ck/public/`)
 - Foto disimpan di: `public_html/ck/public/storage/photos/`
-- URL foto: `https://ck.msapt.co.id/ck/public/storage/photos/[filename]`
+- URL foto: `https://ck.msapt.co.id/public/storage/photos/[filename]`
 - Tidak perlu symbolic link, langsung menyimpan ke public folder
-- Document root subdomain harus menunjuk ke `public_html/ck/public/`
 
 ## URL Format
 - **Storage Path**: `public/storage/photos/[filename]`
-- **Full URL**: `https://ck.msapt.co.id/ck/public/storage/photos/[filename]`
-- **Config URL**: `{APP_URL}/ck/public/storage/{path}`
+- **Full URL**: `https://ck.msapt.co.id/public/storage/photos/[filename]`
+- **Config URL**: `{APP_URL}/public/storage/{path}`

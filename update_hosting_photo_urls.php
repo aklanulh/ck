@@ -33,7 +33,7 @@ foreach ($reports as $report) {
                 $oldUrl = $photo['url'];
 
                 // Check if URL needs updating
-                if (strpos($oldUrl, '/storage/') !== false && strpos($oldUrl, '/ck/public/storage/') === false) {
+                if (strpos($oldUrl, '/storage/') !== false && strpos($oldUrl, '/public/storage/') === false) {
                     // Extract path from old URL
                     if (strpos($oldUrl, '/storage/') !== false) {
                         $pathParts = explode('/storage/', $oldUrl);
@@ -41,7 +41,7 @@ foreach ($reports as $report) {
                             $path = $pathParts[1];
 
                             // Generate new URL with correct hosting structure
-                            $newUrl = config('app.url') . '/ck/public/storage/' . $path;
+                            $newUrl = config('app.url') . '/public/storage/' . $path;
 
                             if ($oldUrl !== $newUrl) {
                                 $photo['url'] = $newUrl;
@@ -72,7 +72,7 @@ echo "Reports processed: " . $reports->count() . "\n";
 
 echo "\n=== New URL Format ===\n";
 echo "From: https://ck.msapt.co.id/storage/photos/photo_xxx.jpg\n";
-echo "To:   https://ck.msapt.co.id/ck/public/storage/photos/photo_xxx.jpg\n";
+echo "To:   https://ck.msapt.co.id/public/storage/photos/photo_xxx.jpg\n";
 
 echo "\n=== Next Steps ===\n";
 echo "1. Upload this file to hosting\n";

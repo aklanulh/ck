@@ -670,7 +670,7 @@ class AuthController extends Controller
             $photoData = [
                 'id' => uniqid(),
                 'path' => $path,
-                'url' => config('app.url') . '/ck/public/storage/' . $path,
+                'url' => config('app.url') . '/public/storage/' . $path,
                 'timestamp' => now()->toISOString(),
                 'timestampText' => $timestamp,
                 'lokasi' => $lokasi

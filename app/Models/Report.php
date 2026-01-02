@@ -66,7 +66,7 @@ class Report extends Model
             foreach ($photos as &$photo) {
                 if (isset($photo['path'])) {
                     // Ensure URL uses correct format for hosting
-                    $photo['url'] = config('app.url') . '/ck/public/storage/' . $photo['path'];
+                    $photo['url'] = config('app.url') . '/public/storage/' . $photo['path'];
                 }
             }
         }
