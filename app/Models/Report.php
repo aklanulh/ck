@@ -50,4 +50,27 @@ class Report extends Model
     {
         return $query->whereDate('tanggal', $date);
     }
+
+    /**
+     * Get photo evidence with corrected URLs
+     */
+    public function getPhotoEvidenceWithUrlsAttribute()
+    {
+        if (!$this->photo_evidence) {
+            return null;
+        }
+
+        $photos = $this->photo_evidence;
+
+        if (is_array($photos)) {
+            foreach ($photos as &$photo) {
+                if (isset($photo['path'])) {
+                    // Ensure URL uses correct format
+                    $photo['url'] = config('app.url') . '/storage/' . $photo['path'];
+                }
+            }
+        }
+
+        return $photos;
+    }
 }

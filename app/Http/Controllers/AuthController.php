@@ -358,7 +358,7 @@ class AuthController extends Controller
                     'laporan' => $report->laporan,
                     'masalah' => $report->masalah,
                     'solusi' => $report->solusi,
-                    'photo_evidence' => $report->photo_evidence,
+                    'photo_evidence' => $report->photo_evidence_with_urls, // Use corrected URLs
                     'status' => $report->status,
                     'submitted_at' => $report->submitted_at ? \Carbon\Carbon::parse($report->submitted_at)->locale('id')->format('d F Y H:i') : null,
                 ];
@@ -391,7 +391,7 @@ class AuthController extends Controller
                     'laporan' => $report->laporan,
                     'masalah' => $report->masalah,
                     'solusi' => $report->solusi,
-                    'photo_evidence' => $report->photo_evidence,
+                    'photo_evidence' => $report->photo_evidence_with_urls, // Use corrected URLs
                     'status' => $report->status,
                     'submitted_at' => $report->submitted_at ? \Carbon\Carbon::parse($report->submitted_at)->locale('id')->format('d F Y H:i') : null,
                 ];
@@ -670,7 +670,7 @@ class AuthController extends Controller
             $photoData = [
                 'id' => uniqid(),
                 'path' => $path,
-                'url' => Storage::url($path),
+                'url' => config('app.url') . '/storage/' . $path,
                 'timestamp' => now()->toISOString(),
                 'timestampText' => $timestamp,
                 'lokasi' => $lokasi

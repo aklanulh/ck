@@ -306,7 +306,7 @@ class AdminController extends Controller
                 'laporan' => $report->laporan,
                 'masalah' => $report->masalah,
                 'solusi' => $report->solusi,
-                'photo_evidence' => $report->photo_evidence,
+                'photo_evidence' => $report->photo_evidence_with_urls, // Use corrected URLs
                 'status' => $report->status,
                 'created_at' => $report->created_at->format('d F Y H:i'),
                 'user' => [
