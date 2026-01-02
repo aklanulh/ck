@@ -10,6 +10,7 @@ use App\Models\VisitSchedule;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -305,6 +306,7 @@ class AdminController extends Controller
                 'laporan' => $report->laporan,
                 'masalah' => $report->masalah,
                 'solusi' => $report->solusi,
+                'photo_evidence' => $report->photo_evidence,
                 'status' => $report->status,
                 'created_at' => $report->created_at->format('d F Y H:i'),
                 'user' => [
@@ -325,6 +327,12 @@ class AdminController extends Controller
         }
 
         $report = Report::findOrFail($id);
+
+        // Delete associated photos
+        if ($report->photo_evidence) {
+            $this->deletePhotos($report->photo_evidence);
+        }
+
         $report->delete();
 
         return redirect('/admin/reports')->with('success', 'Laporan berhasil dihapus.');
@@ -405,6 +413,20 @@ class AdminController extends Controller
             return redirect('/admin/settings')->with('success', 'Cache berhasil dibersihkan!');
         } catch (\Exception $e) {
             return redirect('/admin/settings')->with('error', 'Gagal membersihkan cache: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete photos from storage.
+     */
+    private function deletePhotos($photos)
+    {
+        if (is_array($photos)) {
+            foreach ($photos as $photo) {
+                if (isset($photo['path'])) {
+                    Storage::disk('public')->delete($photo['path']);
+                }
+            }
         }
     }
 }

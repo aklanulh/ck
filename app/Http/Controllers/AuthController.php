@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use App\Models\User;
 use App\Models\Absensi;
 use App\Models\Report;
-use App\Models\User;
 
 class AuthController extends Controller
 {
@@ -356,6 +358,7 @@ class AuthController extends Controller
                     'laporan' => $report->laporan,
                     'masalah' => $report->masalah,
                     'solusi' => $report->solusi,
+                    'photo_evidence' => $report->photo_evidence,
                     'status' => $report->status,
                     'submitted_at' => $report->submitted_at ? \Carbon\Carbon::parse($report->submitted_at)->locale('id')->format('d F Y H:i') : null,
                 ];
@@ -388,6 +391,7 @@ class AuthController extends Controller
                     'laporan' => $report->laporan,
                     'masalah' => $report->masalah,
                     'solusi' => $report->solusi,
+                    'photo_evidence' => $report->photo_evidence,
                     'status' => $report->status,
                     'submitted_at' => $report->submitted_at ? \Carbon\Carbon::parse($report->submitted_at)->locale('id')->format('d F Y H:i') : null,
                 ];
@@ -401,6 +405,8 @@ class AuthController extends Controller
      */
     public function generateReport(Request $request)
     {
+        \Log::info('generateReport called', ['request' => $request->all()]);
+
         $user = session('user');
         if (!$user) {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -412,37 +418,67 @@ class AuthController extends Controller
             'laporan' => 'required|string|max:2000',
             'masalah' => 'nullable|string|max:1000',
             'solusi' => 'nullable|string|max:1000',
-            'photo_evidence' => 'nullable|json',
+            'photo_evidence' => 'nullable|array',
         ]);
 
+        // Process photo evidence array
+        $photoEvidence = null;
+        if ($request->has('photo_evidence')) {
+            $photoEvidence = [];
+            foreach ($request->photo_evidence as $photo) {
+                if (is_string($photo)) {
+                    $photoEvidence[] = json_decode($photo, true);
+                } else {
+                    $photoEvidence[] = $photo;
+                }
+            }
+        }
+
         try {
+            // Convert request tanggal to database format
+            $tanggalDb = \Carbon\Carbon::parse($request->tanggal)->format('Y-m-d');
+
             // Check if user already has 2 submitted reports for this date
-            $existingSubmittedReports = Report::byUser($user['id'])->byDate($request->tanggal)->submitted()->get();
+            $existingSubmittedReports = Report::byUser($user['id'])->byDate($tanggalDb)->submitted()->get();
 
             if ($existingSubmittedReports->count() >= 2) {
                 return response()->json(['error' => 'Maksimal 2 laporan untuk tanggal ' . $request->tanggal . '.']);
             }
 
             // Check if draft exists for this date and user
-            $existingDraft = Report::byUser($user['id'])->byDate($request->tanggal)->draft()->first();
+            $existingDraft = Report::byUser($user['id'])->byDate($tanggalDb)->draft()->first();
+
+            \Log::info('Draft check', [
+                'user_id' => $user['id'],
+                'tanggal_request' => $request->tanggal,
+                'tanggal_db' => $tanggalDb,
+                'existing_draft_id' => $existingDraft ? $existingDraft->id : null,
+                'existing_draft_status' => $existingDraft ? $existingDraft->status : null
+            ]);
 
             if ($existingDraft) {
-                // Update existing draft to submitted
+                // Update draft to submitted status (keep same ID)
+                \Log::info('Updating draft to submitted', ['draft_id' => $existingDraft->id]);
+
                 $existingDraft->update([
                     'lokasi' => $request->lokasi,
                     'laporan' => $request->laporan,
                     'masalah' => $request->masalah,
                     'solusi' => $request->solusi,
-                    'photo_evidence' => $request->photo_evidence ? json_decode($request->photo_evidence) : null,
+                    'photo_evidence' => $photoEvidence,
                     'status' => 'submitted',
                     'submitted_at' => now(),
                 ]);
+
+                \Log::info('Draft updated successfully', ['draft_id' => $existingDraft->id, 'new_status' => $existingDraft->status]);
 
                 return response()->json([
                     'success' => true,
                     'message' => 'Draft berhasil dikirim sebagai laporan!'
                 ]);
             } else {
+                \Log::info('No draft found, creating new report');
+
                 // Create new submitted report
                 $report = Report::create([
                     'user_id' => $user['id'],
@@ -451,10 +487,12 @@ class AuthController extends Controller
                     'laporan' => $request->laporan,
                     'masalah' => $request->masalah,
                     'solusi' => $request->solusi,
-                    'photo_evidence' => $request->photo_evidence ? json_decode($request->photo_evidence) : null,
+                    'photo_evidence' => $photoEvidence,
                     'status' => 'submitted',
                     'submitted_at' => now(),
                 ]);
+
+                \Log::info('New report created', ['report_id' => $report->id]);
 
                 return response()->json([
                     'success' => true,
@@ -490,21 +528,35 @@ class AuthController extends Controller
             'laporan' => 'required|string|max:2000',
             'masalah' => 'nullable|string|max:1000',
             'solusi' => 'nullable|string|max:1000',
-            'photo_evidence' => 'nullable|json',
+            'photo_evidence' => 'nullable|array',
         ]);
+
+        // Process photo evidence array
+        $photoEvidence = null;
+        if ($request->has('photo_evidence')) {
+            $photoEvidence = [];
+            foreach ($request->photo_evidence as $photo) {
+                if (is_string($photo)) {
+                    $photoEvidence[] = json_decode($photo, true);
+                } else {
+                    $photoEvidence[] = $photo;
+                }
+            }
+        }
 
         \Log::info('Validation passed');
 
         try {
             // Check if user already has 2 submitted reports for this date
-            $existingSubmittedReports = Report::byUser($user['id'])->byDate($request->tanggal)->submitted()->get();
+            $tanggalDb = \Carbon\Carbon::parse($request->tanggal)->format('Y-m-d');
+            $existingSubmittedReports = Report::byUser($user['id'])->byDate($tanggalDb)->submitted()->get();
 
             if ($existingSubmittedReports->count() >= 2) {
                 return response()->json(['error' => 'Maksimal 2 laporan untuk tanggal ' . $request->tanggal . '.']);
             }
 
             // Check if draft already exists for this date and user
-            $existingDraft = Report::byUser($user['id'])->byDate($request->tanggal)->draft()->first();
+            $existingDraft = Report::byUser($user['id'])->byDate($tanggalDb)->draft()->first();
 
             if ($existingDraft) {
                 // Update existing draft
@@ -513,7 +565,7 @@ class AuthController extends Controller
                     'laporan' => $request->laporan,
                     'masalah' => $request->masalah,
                     'solusi' => $request->solusi,
-                    'photo_evidence' => $request->photo_evidence ? json_decode($request->photo_evidence) : null,
+                    'photo_evidence' => $photoEvidence,
                 ]);
 
                 \Log::info('Draft updated successfully');
@@ -531,7 +583,7 @@ class AuthController extends Controller
                     'laporan' => $request->laporan,
                     'masalah' => $request->masalah,
                     'solusi' => $request->solusi,
-                    'photo_evidence' => $request->photo_evidence ? json_decode($request->photo_evidence) : null,
+                    'photo_evidence' => $photoEvidence,
                     'status' => 'draft',
                 ]);
 
@@ -568,6 +620,11 @@ class AuthController extends Controller
                 return response()->json(['error' => 'Draft tidak ditemukan'], 404);
             }
 
+            // Delete associated photos
+            if ($draft->photo_evidence) {
+                $this->deletePhotos($draft->photo_evidence);
+            }
+
             // Delete the draft
             $draft->delete();
 
@@ -579,6 +636,69 @@ class AuthController extends Controller
             return response()->json([
                 'error' => 'Gagal menghapus draft: ' . $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Upload photo evidence.
+     */
+    public function uploadPhoto(Request $request)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $request->validate([
+                'photo' => 'required|image|mimes:jpeg,jpg,png|max:5120', // Max 5MB
+                'timestamp' => 'required|string',
+                'lokasi' => 'required|string'
+            ]);
+
+            $photo = $request->file('photo');
+            $timestamp = $request->input('timestamp');
+            $lokasi = $request->input('lokasi');
+
+            // Generate unique filename
+            $filename = 'photo_' . $user['id'] . '_' . time() . '_' . uniqid() . '.jpg';
+
+            // Store photo
+            $path = $photo->storeAs('photos', $filename, 'public');
+
+            // Create photo data
+            $photoData = [
+                'id' => uniqid(),
+                'path' => $path,
+                'url' => Storage::url($path),
+                'timestamp' => now()->toISOString(),
+                'timestampText' => $timestamp,
+                'lokasi' => $lokasi
+            ];
+
+            return response()->json([
+                'success' => true,
+                'photo' => $photoData,
+                'message' => 'Foto berhasil diupload!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Gagal mengupload foto: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Delete photos from storage.
+     */
+    private function deletePhotos($photos)
+    {
+        if (is_array($photos)) {
+            foreach ($photos as $photo) {
+                if (isset($photo['path'])) {
+                    Storage::disk('public')->delete($photo['path']);
+                }
+            }
         }
     }
 }

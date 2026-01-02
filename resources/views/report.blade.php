@@ -199,19 +199,14 @@
                         <label for="lokasi" class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-map-marker-alt mr-2 text-gray-400"></i>Lokasi Kerja
                         </label>
-                        <div class="flex space-x-2">
-                            <input 
-                                type="text" 
-                                id="lokasi" 
-                                name="lokasi"
-                                placeholder="Masukkan lokasi kerja Anda"
-                                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                                required>
-                            <button type="button" onclick="getCurrentLocation()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition">
-                                <i class="fas fa-location-arrow mr-2"></i>Detect Lokasi
-                            </button>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-1">Masukkan lokasi tempat Anda bekerja atau gunakan deteksi otomatis</p>
+                        <input 
+                            type="text" 
+                            id="lokasi" 
+                            name="lokasi"
+                            placeholder="Masukkan lokasi kerja Anda"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            required>
+                        <p class="text-xs text-gray-500 mt-1">Masukkan lokasi tempat Anda bekerja</p>
                     </div>
 
                     <!-- Report Content -->
@@ -330,18 +325,32 @@
             </div>
     </main>
 
+    <!-- Photo Preview Modal -->
+    <div id="photoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden items-center justify-center p-4" onclick="closePhotoModalOnBackdrop(event)">
+        <div class="relative max-w-4xl max-h-full" onclick="event.stopPropagation()">
+            <img id="modalImage" src="" alt="Full size photo" class="max-w-full max-h-full rounded-lg">
+            <button type="button" onclick="closePhotoModal()" class="absolute top-4 right-4 bg-white bg-opacity-90 text-gray-800 rounded-full p-2 hover:bg-opacity-100 transition-all">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+    </div>
+
     <script>
         // Camera variables
         let stream = null;
         let capturedPhotos = [];
         let photoIdCounter = 0;
         let currentLocation = null;
+        let cameraLocation = 'Mendeteksi lokasi...';
 
         // Load draft data if available
         function loadDraftData() {
             const draftData = sessionStorage.getItem('editDraft');
+            console.log('Draft data from sessionStorage:', draftData);
+            
             if (draftData) {
                 const draft = JSON.parse(draftData);
+                console.log('Parsed draft data:', draft);
                 
                 // Populate form fields with draft data (except tanggal which is always today)
                 document.getElementById('lokasi').value = draft.lokasi;
@@ -351,8 +360,12 @@
                 
                 // Load photo evidence if exists
                 if (draft.photo_evidence) {
-                    capturedPhotos = JSON.parse(draft.photo_evidence);
+                    console.log('Photo evidence found:', draft.photo_evidence);
+                    capturedPhotos = draft.photo_evidence;
+                    console.log('Captured photos set to:', capturedPhotos);
                     displayCapturedPhotos();
+                } else {
+                    console.log('No photo evidence in draft');
                 }
                 
                 // Update character counters
@@ -365,6 +378,8 @@
                 
                 // Show notification
                 showNotification('Draft berhasil dimuat. Lanjutkan mengedit laporan Anda.', 'info');
+            } else {
+                console.log('No draft data found in sessionStorage');
             }
         }
 
@@ -380,22 +395,25 @@
                     } 
                 });
                 
-                // Show camera section
+                // Show camera section and hide start button
                 document.getElementById('cameraSection').classList.remove('hidden');
                 document.getElementById('startCameraSection').classList.add('hidden');
+                
+                // Get camera location
+                getCameraLocation();
                 
                 // Start video stream
                 const video = document.getElementById('cameraVideo');
                 video.srcObject = stream;
                 
-                // Update timestamp
+                // Start updating timestamp
                 updateCameraTimestamp();
                 setInterval(updateCameraTimestamp, 1000);
                 
                 showNotification('Kamera berhasil dibuka', 'success');
             } catch (error) {
                 console.error('Error accessing camera:', error);
-                showNotification('Tidak dapat mengakses kamera. Pastikan izin kamera diaktifkan.', 'error');
+                showNotification('Tidak dapat mengakses kamera. Pastikan izin kamera telah diberikan.', 'error');
             }
         }
 
@@ -415,9 +433,8 @@
             const timestampElement = document.getElementById('cameraTimestamp');
             if (timestampElement) {
                 const now = new Date();
-                const lokasi = document.getElementById('lokasi').value || 'Lokasi tidak diketahui';
                 const dateTimeString = now.toLocaleString('id-ID');
-                timestampElement.textContent = `${dateTimeString} | ${lokasi}`;
+                timestampElement.textContent = `${dateTimeString} | ${cameraLocation}`;
             }
         }
 
@@ -432,9 +449,8 @@
             
             // Add timestamp with location to photo
             const timestamp = new Date();
-            const lokasi = document.getElementById('lokasi').value || 'Lokasi tidak diketahui';
             const dateTimeString = timestamp.toLocaleString('id-ID');
-            const timestampText = `${dateTimeString} | ${lokasi}`;
+            const timestampText = `${dateTimeString} | ${cameraLocation}`;
             
             // Configure timestamp style
             context.font = 'bold 14px Arial';
@@ -449,46 +465,117 @@
             context.strokeText(timestampText, x, y);
             context.fillText(timestampText, x, y);
             
-            // Convert to base64
-            const photoData = canvas.toDataURL('image/jpeg', 0.8);
-            
-            // Add to captured photos
-            const photoId = ++photoIdCounter;
-            const photo = {
-                id: photoId,
-                data: photoData,
-                timestamp: timestamp.toISOString(),
-                timestampText: timestampText,
-                lokasi: lokasi
-            };
-            
-            capturedPhotos.push(photo);
-            displayCapturedPhotos();
-            updatePhotoEvidenceInput();
-            
-            showNotification('Foto berhasil ditangkap', 'success');
+            // Convert canvas to blob
+            canvas.toBlob(function(blob) {
+                // Create form data for upload
+                const formData = new FormData();
+                formData.append('photo', blob, 'photo.jpg');
+                formData.append('timestamp', timestampText);
+                formData.append('lokasi', cameraLocation);
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+                
+                // Upload photo to server
+                fetch('{{ route("report.uploadPhoto") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Add to captured photos
+                        capturedPhotos.push(data.photo);
+                        displayCapturedPhotos();
+                        updatePhotoEvidenceInput();
+                        showNotification('Foto berhasil ditangkap dan diupload', 'success');
+                    } else {
+                        showNotification(data.error || 'Gagal mengupload foto', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error uploading photo:', error);
+                    showNotification('Terjadi kesalahan saat mengupload foto', 'error');
+                });
+            }, 'image/jpeg', 0.8);
         }
 
         function displayCapturedPhotos() {
             const container = document.getElementById('capturedPhotos');
+            console.log('Displaying captured photos. Container:', container);
+            console.log('Captured photos array:', capturedPhotos);
+            console.log('Number of photos:', capturedPhotos.length);
+            
             container.innerHTML = '';
             
-            capturedPhotos.forEach(photo => {
+            if (capturedPhotos.length === 0) {
+                console.log('No photos to display');
+                return;
+            }
+            
+            capturedPhotos.forEach((photo, index) => {
+                console.log(`Processing photo ${index}:`, photo);
                 const photoDiv = document.createElement('div');
                 photoDiv.className = 'flex items-center space-x-3 p-3 bg-gray-50 rounded-lg';
                 photoDiv.innerHTML = `
-                    <img src="${photo.data}" alt="Bukti foto" class="w-20 h-20 object-cover rounded-lg">
+                    <img src="${photo.url}" alt="Bukti foto" class="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity" onclick="openPhotoModal('${photo.url}')">
                     <div class="flex-1">
                         <p class="text-sm font-medium text-gray-900">Foto Bukti</p>
                         <p class="text-xs text-gray-500">${photo.timestampText}</p>
                         <p class="text-xs text-gray-400">📍 ${photo.lokasi}</p>
                     </div>
-                    <button type="button" onclick="removePhoto(${photo.id})" class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors">
+                    <button type="button" onclick="removePhoto('${photo.id}')" class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors">
                         <i class="fas fa-trash"></i>
                     </button>
                 `;
                 container.appendChild(photoDiv);
+                console.log(`Photo ${index} added to container`);
             });
+            
+            console.log('Finished displaying photos');
+        }
+
+        // Photo modal functions
+        function openPhotoModal(imageUrl) {
+            const modal = document.getElementById('photoModal');
+            const modalImage = document.getElementById('modalImage');
+            
+            modalImage.src = imageUrl;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Add escape key listener
+            document.addEventListener('keydown', handleEscapeKey);
+            
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePhotoModal() {
+            const modal = document.getElementById('photoModal');
+            
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            
+            // Remove escape key listener
+            document.removeEventListener('keydown', handleEscapeKey);
+            
+            // Restore body scroll
+            document.body.style.overflow = 'auto';
+        }
+
+        function handleEscapeKey(event) {
+            if (event.key === 'Escape') {
+                closePhotoModal();
+            }
+        }
+
+        function closePhotoModalOnBackdrop(event) {
+            // Close modal only if clicked on backdrop (outside the image container)
+            if (event.target === event.currentTarget) {
+                closePhotoModal();
+            }
         }
 
         function removePhoto(photoId) {
@@ -506,12 +593,10 @@
         // Load draft data on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadDraftData();
-            // Try to get current location automatically
-            setTimeout(getCurrentLocation, 1000);
         });
 
-        // Get current location
-        function getCurrentLocation() {
+        // Get camera location (separate from form location)
+        function getCameraLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     function(position) {
@@ -522,59 +607,56 @@
                         };
                         
                         // Try to get address from coordinates (using reverse geocoding)
-                        getAddressFromCoordinates(currentLocation.lat, currentLocation.lng);
+                        getCameraAddressFromCoordinates(currentLocation.lat, currentLocation.lng);
                     },
                     function(error) {
-                        console.error('Error getting location:', error);
+                        console.error('Error getting camera location:', error);
                         // If geolocation fails, try IP-based location
-                        getLocationFromIP();
+                        getCameraLocationFromIP();
                     }
                 );
             } else {
                 // If geolocation not supported, try IP-based location
-                getLocationFromIP();
+                getCameraLocationFromIP();
             }
         }
 
-        // Get address from coordinates using reverse geocoding
-        function getAddressFromCoordinates(lat, lng) {
+        // Get camera address from coordinates using reverse geocoding
+        function getCameraAddressFromCoordinates(lat, lng) {
             // Using Nominatim (OpenStreetMap) for reverse geocoding
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=id`)
                 .then(response => response.json())
                 .then(data => {
                     if (data && data.display_name) {
-                        const locationInput = document.getElementById('lokasi');
-                        if (!locationInput.value) {
-                            locationInput.value = data.display_name;
-                            updateCameraTimestamp();
-                            showNotification('Lokasi berhasil dideteksi secara otomatis', 'success');
-                        }
+                        cameraLocation = data.display_name;
+                        updateCameraTimestamp();
+                        showNotification('Lokasi kamera berhasil dideteksi', 'success');
                     }
                 })
                 .catch(error => {
-                    console.error('Error getting address:', error);
-                    getLocationFromIP();
+                    console.error('Error getting camera address:', error);
+                    getCameraLocationFromIP();
                 });
         }
 
-        // Get location from IP as fallback
-        function getLocationFromIP() {
+        // Get camera location from IP as fallback
+        function getCameraLocationFromIP() {
             fetch('https://ipapi.co/json/')
                 .then(response => response.json())
                 .then(data => {
                     if (data && data.city && data.country_name) {
-                        const locationInput = document.getElementById('lokasi');
-                        if (!locationInput.value) {
-                            const location = `${data.city}, ${data.region}, ${data.country_name}`;
-                            locationInput.value = location;
-                            updateCameraTimestamp();
-                            showNotification('Lokasi berhasil dideteksi berdasarkan IP', 'info');
-                        }
+                        cameraLocation = `${data.city}, ${data.region}, ${data.country_name}`;
+                        updateCameraTimestamp();
+                        showNotification('Lokasi kamera berhasil dideteksi berdasarkan IP', 'info');
+                    } else {
+                        cameraLocation = 'Lokasi tidak diketahui';
+                        updateCameraTimestamp();
                     }
                 })
                 .catch(error => {
-                    console.error('Error getting IP location:', error);
-                    showNotification('Tidak dapat mendeteksi lokasi otomatis. Silakan masukkan lokasi secara manual.', 'warning');
+                    console.error('Error getting camera IP location:', error);
+                    cameraLocation = 'Lokasi tidak diketahui';
+                    updateCameraTimestamp();
                 });
         }
 
@@ -634,7 +716,11 @@
             draftData.append('laporan', document.getElementById('laporan').value);
             draftData.append('masalah', document.getElementById('masalah').value);
             draftData.append('solusi', document.getElementById('solusi').value);
-            draftData.append('photo_evidence', document.getElementById('photoEvidence').value);
+            
+            // Add photo evidence as array
+            capturedPhotos.forEach((photo, index) => {
+                draftData.append(`photo_evidence[${index}]`, JSON.stringify(photo));
+            });
             
             fetch('{{ route("report.saveDraft") }}', {
                 method: 'POST',
@@ -647,6 +733,10 @@
             .then(data => {
                 if (data.success) {
                     showNotification(data.message, 'success');
+                    // Redirect to drafts page after successful save
+                    setTimeout(() => {
+                        window.location.href = '{{ route("report.drafts") }}';
+                    }, 1500);
                 } else {
                     showNotification(data.error || 'Terjadi kesalahan', 'error');
                 }
@@ -696,6 +786,14 @@
             const formData = new FormData(form);
             const submitButton = form.querySelector('button[type="submit"]');
             
+            // Remove photo_evidence from form data and add as array
+            formData.delete('photo_evidence');
+            
+            // Add photo evidence as array
+            capturedPhotos.forEach((photo, index) => {
+                formData.append(`photo_evidence[${index}]`, JSON.stringify(photo));
+            });
+            
             // Disable submit button and show loading
             submitButton.disabled = true;
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Mengirim...';
@@ -711,11 +809,10 @@
             .then(data => {
                 if (data.success) {
                     showNotification(data.message, 'success');
-                    // Clear form
-                    form.reset();
-                    updateLaporanCount();
-                    updateMasalahCount();
-                    updateSolusiCount();
+                    // Redirect to report history after successful submit
+                    setTimeout(() => {
+                        window.location.href = '{{ route("report.history") }}';
+                    }, 1500);
                 } else {
                     showNotification(data.error || 'Terjadi kesalahan', 'error');
                 }
@@ -766,7 +863,6 @@
             document.getElementById('laporan').addEventListener('input', updateLaporanCount);
             document.getElementById('masalah').addEventListener('input', updateMasalahCount);
             document.getElementById('solusi').addEventListener('input', updateSolusiCount);
-            document.getElementById('lokasi').addEventListener('input', updateCameraTimestamp);
         });
 
         // Toggle mobile menu

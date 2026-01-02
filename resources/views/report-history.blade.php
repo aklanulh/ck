@@ -258,6 +258,16 @@
         </div>
     </div>
 
+    <!-- Photo Preview Modal -->
+    <div id="photoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden items-center justify-center p-4" onclick="closePhotoModalOnBackdrop(event)">
+        <div class="relative max-w-4xl max-h-full" onclick="event.stopPropagation()">
+            <img id="modalImage" src="" alt="Full size photo" class="max-w-full max-h-full rounded-lg">
+            <button type="button" onclick="closePhotoModal()" class="absolute top-4 right-4 bg-white bg-opacity-90 text-gray-800 rounded-full p-2 hover:bg-opacity-100 transition-all">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+    </div>
+
     <script>
         // Store reports data for JavaScript access
         const reportsData = @json($reports);
@@ -313,9 +323,26 @@
                     </div>
                     ` : ''}
                     
+                    ${report.photo_evidence && report.photo_evidence.length > 0 ? `
+                    <div>
+                        <label class="text-sm font-medium text-gray-500">Bukti Foto</label>
+                        <div class="mt-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            ${report.photo_evidence.map(photo => `
+                                <div class="relative group">
+                                    <img src="${photo.url}" alt="Bukti foto" class="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" onclick="openPhotoModal('${photo.url}')">
+                                    <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white p-2 rounded-b-lg">
+                                        <p class="text-xs">${photo.timestampText}</p>
+                                        <p class="text-xs opacity-75">📍 ${photo.lokasi}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
                     <div class="text-sm text-gray-500">
                         <i class="fas fa-clock mr-1"></i>
-                        Dikirim: ${report.submitted_at || 'N/A'}
+                        ${report.submitted_at ? `Dikirim: ${report.submitted_at}` : `Dibuat: ${report.created_at}`}
                     </div>
                     
                     <div class="flex justify-end">
@@ -462,6 +489,48 @@
         function toggleMobileMenu() {
             const menu = document.getElementById('mobileMenu');
             menu.classList.toggle('hidden');
+        }
+
+        // Photo modal functions
+        function openPhotoModal(imageUrl) {
+            const modal = document.getElementById('photoModal');
+            const modalImage = document.getElementById('modalImage');
+            
+            modalImage.src = imageUrl;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Add escape key listener
+            document.addEventListener('keydown', handleEscapeKey);
+            
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePhotoModal() {
+            const modal = document.getElementById('photoModal');
+            
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            
+            // Remove escape key listener
+            document.removeEventListener('keydown', handleEscapeKey);
+            
+            // Restore body scroll
+            document.body.style.overflow = 'auto';
+        }
+
+        function handleEscapeKey(event) {
+            if (event.key === 'Escape') {
+                closePhotoModal();
+            }
+        }
+
+        function closePhotoModalOnBackdrop(event) {
+            // Close modal only if clicked on backdrop (outside the image container)
+            if (event.target === event.currentTarget) {
+                closePhotoModal();
+            }
         }
     </script>
 </body>
