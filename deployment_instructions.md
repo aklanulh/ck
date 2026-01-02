@@ -107,5 +107,11 @@ public_html/ck/
 ## Storage Configuration untuk Subdomain
 Untuk subdomain `ck.msapt.co.id` dengan path `public_html/ck/public`:
 - Foto disimpan di: `public_html/ck/public/storage/photos/`
-- URL foto: `https://ck.msapt.co.id/storage/photos/[filename]`
+- URL foto: `https://ck.msapt.co.id/ck/public/storage/photos/[filename]`
 - Tidak perlu symbolic link, langsung menyimpan ke public folder
+- Document root subdomain harus menunjuk ke `public_html/ck/public/`
+
+## URL Format
+- **Storage Path**: `public/storage/photos/[filename]`
+- **Full URL**: `https://ck.msapt.co.id/ck/public/storage/photos/[filename]`
+- **Config URL**: `{APP_URL}/ck/public/storage/{path}`
