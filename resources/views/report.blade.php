@@ -750,6 +750,7 @@
         function saveDraft() {
             const laporan = document.getElementById('laporan').value.trim();
             const lokasi = document.getElementById('lokasi').value.trim();
+            const tanggal = document.getElementById('tanggal').value.trim();
             
             if (!lokasi) {
                 showNotification('Lokasi kerja tidak boleh kosong', 'error');
@@ -766,19 +767,25 @@
                 return false;
             }
             
-            // Get form data
-            const form = document.querySelector('form');
-            const formData = new FormData(form);
-            const saveButton = document.querySelector('button[onclick="saveDraft()"]');
-            
-            // Disable button and show loading
-            saveButton.disabled = true;
-            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
+            // Create form data manually to ensure all fields are included
+            const formData = new FormData();
+            formData.append('tanggal', tanggal);
+            formData.append('lokasi', lokasi);
+            formData.append('laporan', laporan);
+            formData.append('masalah', document.getElementById('masalah').value.trim());
+            formData.append('solusi', document.getElementById('solusi').value.trim());
+            formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
             
             // Add photo evidence to form data
             capturedPhotos.forEach((photo, index) => {
                 formData.append(`photo_evidence[${index}]`, JSON.stringify(photo));
             });
+            
+            const saveButton = document.querySelector('button[onclick="saveDraft()"]');
+            
+            // Disable button and show loading
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
             
             fetch('{{ route("report.saveDraft") }}', {
                 method: 'POST',
@@ -818,6 +825,7 @@
             
             const laporan = document.getElementById('laporan').value.trim();
             const lokasi = document.getElementById('lokasi').value.trim();
+            const tanggal = document.getElementById('tanggal').value.trim();
             
             if (!lokasi) {
                 showNotification('Lokasi kerja tidak boleh kosong', 'error');
@@ -841,24 +849,27 @@
                 return false;
             }
             
-            // Submit form via AJAX
-            const form = event.target;
-            const formData = new FormData(form);
-            const submitButton = form.querySelector('button[type="submit"]');
-            
-            // Remove photo_evidence from form data and add as array
-            formData.delete('photo_evidence');
+            // Create form data manually to ensure all fields are included
+            const formData = new FormData();
+            formData.append('tanggal', tanggal);
+            formData.append('lokasi', lokasi);
+            formData.append('laporan', laporan);
+            formData.append('masalah', document.getElementById('masalah').value.trim());
+            formData.append('solusi', document.getElementById('solusi').value.trim());
+            formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
             
             // Add photo evidence as array
             capturedPhotos.forEach((photo, index) => {
                 formData.append(`photo_evidence[${index}]`, JSON.stringify(photo));
             });
             
+            const submitButton = document.querySelector('button[type="submit"]');
+            
             // Disable submit button and show loading
             submitButton.disabled = true;
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Mengirim...';
             
-            fetch(form.action, {
+            fetch('{{ route("report.generate") }}', {
                 method: 'POST',
                 body: formData,
                 headers: {
