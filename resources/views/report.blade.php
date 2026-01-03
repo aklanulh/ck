@@ -276,7 +276,7 @@
                             <div id="cameraSection" class="hidden">
                                 <div class="relative bg-black rounded-lg overflow-hidden" style="max-width: 640px;">
                                     <video id="cameraVideo" class="w-full" autoplay playsinline></video>
-                                    <div class="absolute top-2 right-2 bg-black bg-opacity-75 text-white px-3 py-2 rounded-lg text-sm font-medium" id="cameraTimestamp"></div>
+                                    <div class="absolute top-2 right-2 bg-black bg-opacity-75 text-white px-3 py-2 rounded-lg text-base font-medium" id="cameraTimestamp"></div>
                                 </div>
                                 <div class="mt-3 flex space-x-3">
                                     <button type="button" onclick="capturePhoto()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition">
@@ -453,15 +453,15 @@
             const timestampText = `${dateTimeString} | ${cameraLocation}`;
             
             // Configure timestamp style
-            context.font = 'bold 14px Arial';
+            context.font = 'bold 20px Arial';
             context.fillStyle = 'white';
             context.strokeStyle = 'black';
-            context.lineWidth = 3;
+            context.lineWidth = 4;
             context.textAlign = 'right';
             
             // Add timestamp with outline for better visibility
-            const x = canvas.width - 10;
-            const y = canvas.height - 10;
+            const x = canvas.width - 15;
+            const y = canvas.height - 15;
             context.strokeText(timestampText, x, y);
             context.fillText(timestampText, x, y);
             
