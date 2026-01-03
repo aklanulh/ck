@@ -129,9 +129,6 @@
                         <a href="{{ route('report') }}" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                             <i class="fas fa-plus mr-2"></i>Buat Laporan Baru
                         </a>
-                        <a href="{{ route('report.drafts') }}" class="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
-                            <i class="fas fa-edit mr-2"></i>Draft Laporan
-                        </a>
                     </div>
                 </div>
             </div>
@@ -201,7 +198,7 @@
                                     <div class="flex-1">
                                         <div class="flex items-center mb-2">
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                <i class="fas fa-check-circle mr-1"></i>{{ $report['status'] === 'submitted' ? 'Terkirim' : 'Draft' }}
+                                                <i class="fas fa-check-circle mr-1"></i>{{ $report['status'] === 'submitted' ? 'Terkirim' : '' }}
                                             </span>
                                             <span class="ml-2 text-sm text-gray-500">
                                                 <i class="fas fa-calendar mr-1"></i>{{ $report['tanggal'] }}
@@ -282,9 +279,8 @@
             modalContent.innerHTML = `
                 <div class="space-y-4">
                     <div class="flex items-center justify-between">
-                        <h4 class="text-lg font-semibold text-gray-900">Detail Laporan</h4>
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <i class="fas fa-check-circle mr-1"></i>${report.status === 'submitted' ? 'Terkirim' : 'Draft'}
+                            ${report.status === 'submitted' ? '<i class="fas fa-check-circle mr-1"></i>Terkirim' : ''}
                         </span>
                     </div>
                     
@@ -296,6 +292,10 @@
                         <div>
                             <label class="text-sm font-medium text-gray-500">Lokasi</label>
                             <p class="text-gray-900">${report.lokasi}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-500">Pengguna</label>
+                            <p class="text-gray-900">{{ session('user')['name'] }}</p>
                         </div>
                     </div>
                     
@@ -351,7 +351,8 @@
                             <i class="fas fa-file-pdf mr-2"></i>Export PDF
                         </button>
                     </div>
-                </div>
+                    
+                                    </div>
             `;
             
             document.getElementById('reportModal').classList.remove('hidden');
@@ -375,8 +376,24 @@
                     <style>
                         body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
                         .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #6B46C1; padding-bottom: 20px; }
-                        .header h1 { color: #6B46C1; margin: 0; }
+                        .header h1 { color: #6B46C1; margin: 0; font-size: 24px; }
                         .header p { color: #6B7280; margin: 5px 0 0 0; }
+                        .logo { 
+                            max-width: 150px; 
+                            margin-bottom: 20px; 
+                            display: block;
+                            margin-left: auto;
+                            margin-right: auto;
+                        }
+                        .logo-error {
+                            display: none;
+                            font-style: italic;
+                            color: #6B7280;
+                            text-align: center;
+                            margin-bottom: 20px;
+                        }
+                        .company-info { text-align: center; margin-bottom: 30px; }
+                        .company-name { font-size: 18px; font-weight: bold; color: #111827; margin-bottom: 5px; }
                         .section { margin-bottom: 25px; }
                         .section-title { font-weight: bold; color: #374151; margin-bottom: 10px; font-size: 14px; }
                         .section-content { background: #F9FAFB; padding: 15px; border-radius: 8px; border-left: 4px solid #6B46C1; }
@@ -387,32 +404,39 @@
                         .footer { text-align: center; margin-top: 40px; color: #6B7280; font-size: 12px; }
                         .problem-section { border-left-color: #EF4444; }
                         .solution-section { border-left-color: #10B981; }
-                        @media print { body { margin: 15px; } }
+                        @media print { body { margin: 15px; }
+                            .no-print { display: none; }
+                        }
                     </style>
                 </head>
                 <body>
                     <div class="header">
+                        <img src="{{ url('/LOGO%20MSA.png') }}" alt="PT MITRAJAYA SELARAS ABADI" class="logo" onerror="this.style.display='none'; document.getElementById('logo-error').style.display='block';">
+                        <div id="logo-error" class="logo-error">PT MITRAJAYA SELARAS ABADI</div>
                         <h1>LAPORAN HARIAN</h1>
                         <p>CatatanKerja - Sistem Laporan Harian</p>
-                        <p>${report.tanggal}</p>
+                    </div>
+                    
+                    <div class="company-info">
+                        <div class="company-name">PT MITRAJAYA SELARAS ABADI</div>
                     </div>
                     
                     <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Nama</div>
+                            <div class="info-value">{{ session('user')['name'] }}</div>
+                        </div>
                         <div class="info-item">
                             <div class="info-label">Tanggal Laporan</div>
                             <div class="info-value">${report.tanggal}</div>
                         </div>
                         <div class="info-item">
-                            <div class="info-label">Lokasi Kerja</div>
+                            <div class="info-label">Lokasi Laporan</div>
                             <div class="info-value">${report.lokasi}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">Status</div>
                             <div class="info-value">${report.status === 'submitted' ? 'Terkirim' : 'Draft'}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">Waktu Pengiriman</div>
-                            <div class="info-value">${report.submitted_at || 'N/A'}</div>
                         </div>
                     </div>
                     
@@ -459,6 +483,7 @@
             };
         }
 
+        
         // Show notification
         function showNotification(message, type) {
             const notification = document.createElement('div');

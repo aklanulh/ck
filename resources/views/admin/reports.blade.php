@@ -262,11 +262,9 @@ function displayReportDetail(report) {
     const content = `
         <div class="space-y-4">
             <div class="flex items-center justify-between">
-                <h4 class="text-lg font-semibold text-gray-900">Detail Laporan</h4>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
                     ${report.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
-                    <i class="fas fa-${report.status === 'published' ? 'check-circle' : 'edit'} mr-1"></i>
-                    ${report.status === 'published' ? 'Published' : 'Draft'}
+                    ${report.status === 'published' ? '<i class="fas fa-check-circle mr-1"></i>Published' : ''}
                 </span>
             </div>
             
@@ -337,6 +335,7 @@ function displayReportDetail(report) {
                     <i class="fas fa-file-pdf mr-2"></i>Export PDF
                 </button>
             </div>
+            
         </div>
     `;
     
@@ -359,12 +358,28 @@ function exportToPDF(reportId) {
                 const printContent = `
                     <html>
                     <head>
-                        <title>Laporan - ${report.title}</title>
+                        <title>Laporan Harian - ${report.tanggal}</title>
                         <style>
                             body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
                             .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #DC2626; padding-bottom: 20px; }
-                            .header h1 { color: #DC2626; margin: 0; }
+                            .header h1 { color: #DC2626; margin: 0; font-size: 24px; }
                             .header p { color: #6B7280; margin: 5px 0 0 0; }
+                            .logo { 
+                            max-width: 150px; 
+                            margin-bottom: 20px; 
+                            display: block;
+                            margin-left: auto;
+                            margin-right: auto;
+                        }
+                        .logo-error {
+                            display: none;
+                            font-style: italic;
+                            color: #6B7280;
+                            text-align: center;
+                            margin-bottom: 20px;
+                        }
+                            .company-info { text-align: center; margin-bottom: 30px; }
+                            .company-name { font-size: 18px; font-weight: bold; color: #111827; margin-bottom: 5px; }
                             .section { margin-bottom: 25px; }
                             .section-title { font-weight: bold; color: #374151; margin-bottom: 10px; font-size: 14px; }
                             .section-content { background: #F9FAFB; padding: 15px; border-radius: 8px; border-left: 4px solid #DC2626; }
@@ -375,40 +390,39 @@ function exportToPDF(reportId) {
                             .footer { text-align: center; margin-top: 40px; color: #6B7280; font-size: 12px; }
                             .problem-section { border-left-color: #EF4444; }
                             .solution-section { border-left-color: #10B981; }
-                            @media print { body { margin: 15px; } }
+                            @media print { body { margin: 15px; }
+                                .no-print { display: none; }
+                            }
                         </style>
                     </head>
                     <body>
                         <div class="header">
+                            <img src="{{ url('/LOGO%20MSA.png') }}" alt="PT MITRAJAYA SELARAS ABADI" class="logo" onerror="this.style.display='none'; document.getElementById('logo-error').style.display='block';">
+                            <div id="logo-error" class="logo-error">PT MITRAJAYA SELARAS ABADI</div>
                             <h1>LAPORAN HARIAN</h1>
                             <p>CatatanKerja - Sistem Laporan Harian</p>
-                            <p>${report.tanggal}</p>
+                        </div>
+                        
+                        <div class="company-info">
+                            <div class="company-name">PT MITRAJAYA SELARAS ABADI</div>
                         </div>
                         
                         <div class="info-grid">
                             <div class="info-item">
-                                <div class="info-label">Judul Laporan</div>
-                                <div class="info-value">${report.title}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">Pengguna</div>
+                                <div class="info-label">Nama</div>
                                 <div class="info-value">${report.user.name}</div>
                             </div>
                             <div class="info-item">
-                                <div class="info-label">Email</div>
-                                <div class="info-value">${report.user.email}</div>
+                                <div class="info-label">Tanggal Laporan</div>
+                                <div class="info-value">${report.tanggal}</div>
                             </div>
                             <div class="info-item">
-                                <div class="info-label">Lokasi Kerja</div>
+                                <div class="info-label">Lokasi Laporan</div>
                                 <div class="info-value">${report.lokasi}</div>
                             </div>
                             <div class="info-item">
                                 <div class="info-label">Status</div>
                                 <div class="info-value">${report.status === 'published' ? 'Published' : 'Draft'}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">Tanggal Dibuat</div>
-                                <div class="info-value">${report.created_at}</div>
                             </div>
                         </div>
                         
@@ -459,6 +473,7 @@ function exportToPDF(reportId) {
             alert('Terjadi kesalahan saat export PDF');
         });
 }
+
 
 document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
     if (deleteReportId) {
