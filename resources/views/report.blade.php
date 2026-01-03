@@ -434,7 +434,7 @@
             if (timestampElement) {
                 const now = new Date();
                 const dateTimeString = now.toLocaleString('id-ID');
-                timestampElement.textContent = `${dateTimeString} | ${cameraLocation}`;
+                timestampElement.textContent = `${dateTimeString}\n${cameraLocation}`;
             }
         }
 
@@ -450,7 +450,7 @@
             // Add timestamp with location to photo
             const timestamp = new Date();
             const dateTimeString = timestamp.toLocaleString('id-ID');
-            const timestampText = `${dateTimeString} | ${cameraLocation}`;
+            const timestampText = `${dateTimeString}\n${cameraLocation}`;
             
             // Configure timestamp style
             context.font = 'bold 20px Arial';
