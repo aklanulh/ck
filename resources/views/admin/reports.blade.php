@@ -476,32 +476,46 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', function()
             return;
         }
         
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/admin/reports/' + deleteReportId;
+        // Show loading state
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        const originalText = confirmBtn.innerHTML;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menghapus...';
+        confirmBtn.disabled = true;
         
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = '_token';
-        csrfInput.value = csrfToken;
-        
-        const methodInput = document.createElement('input');
-        methodInput.type = 'hidden';
-        methodInput.name = '_method';
-        methodInput.value = 'DELETE';
-        
-        // Add password to form
-        const passwordInput = document.createElement('input');
-        passwordInput.type = 'hidden';
-        passwordInput.name = 'delete_password';
-        passwordInput.value = password;
-        
-        form.appendChild(csrfInput);
-        form.appendChild(methodInput);
-        form.appendChild(passwordInput);
-        document.body.appendChild(form);
-        form.submit();
+        // Send delete request with password
+        fetch(`/admin/reports/${deleteReportId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                delete_password: password
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Close modal and show success message
+                closeDeleteModal();
+                alert(data.message);
+                // Refresh page to show updated list
+                window.location.reload();
+            } else {
+                // Show error message
+                alert(data.error || 'Gagal menghapus laporan');
+                // Reset button state
+                confirmBtn.innerHTML = originalText;
+                confirmBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghapus laporan');
+            // Reset button state
+            confirmBtn.innerHTML = originalText;
+            confirmBtn.disabled = false;
+        });
     }
 });
 

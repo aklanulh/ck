@@ -318,24 +318,44 @@ class AdminController extends Controller
     }
 
     /**
-     * Delete report.
+     * Delete report with admin password verification.
      */
-    public function deleteReport($id)
+    public function deleteReport(Request $request, $id)
     {
         if (session('user')['role'] !== 'admin') {
-            return redirect('/absensi')->with('error', 'Anda tidak memiliki akses ke halaman admin.');
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $report = Report::findOrFail($id);
+        $request->validate([
+            'delete_password' => 'required|string'
+        ]);
 
-        // Delete associated photos
-        if ($report->photo_evidence) {
-            $this->deletePhotos($report->photo_evidence);
+        try {
+            // Verify admin password
+            $admin = User::find(session('user')['id']);
+            if (!Hash::check($request->delete_password, $admin->password)) {
+                return response()->json(['error' => 'Password admin salah!'], 401);
+            }
+
+            // Find and delete report
+            $report = Report::findOrFail($id);
+            $reportTitle = $report->title;
+            $userName = $report->user->name;
+
+            // Delete associated photos
+            if ($report->photo_evidence) {
+                $this->deletePhotos($report->photo_evidence);
+            }
+
+            $report->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Laporan '{$reportTitle}' oleh {$userName} berhasil dihapus!"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Gagal menghapus laporan: ' . $e->getMessage()], 500);
         }
-
-        $report->delete();
-
-        return redirect('/admin/reports')->with('success', 'Laporan berhasil dihapus.');
     }
 
     /**

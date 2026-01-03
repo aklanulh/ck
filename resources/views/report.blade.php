@@ -579,10 +579,44 @@
         }
 
         function removePhoto(photoId) {
-            capturedPhotos = capturedPhotos.filter(photo => photo.id !== photoId);
-            displayCapturedPhotos();
-            updatePhotoEvidenceInput();
-            showNotification('Foto dihapus', 'info');
+            // Find the photo to remove
+            const photoToRemove = capturedPhotos.find(photo => photo.id === photoId);
+            
+            if (photoToRemove) {
+                // Delete photo from server
+                fetch('{{ route("report.deletePhoto") }}', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        photo_path: photoToRemove.path
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove from array and update display
+                        capturedPhotos = capturedPhotos.filter(photo => photo.id !== photoId);
+                        displayCapturedPhotos();
+                        updatePhotoEvidenceInput();
+                        showNotification('Foto berhasil dihapus', 'success');
+                    } else {
+                        showNotification(data.error || 'Gagal menghapus foto dari server', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting photo:', error);
+                    showNotification('Terjadi kesalahan saat menghapus foto', 'error');
+                });
+            } else {
+                // Fallback: just remove from array if photo not found
+                capturedPhotos = capturedPhotos.filter(photo => photo.id !== photoId);
+                displayCapturedPhotos();
+                updatePhotoEvidenceInput();
+                showNotification('Foto dihapus dari daftar', 'info');
+            }
         }
 
         function updatePhotoEvidenceInput() {
@@ -590,9 +624,42 @@
             input.value = JSON.stringify(capturedPhotos);
         }
 
+        // Function to cleanup unused photos from server
+        function cleanupPhotos() {
+            if (capturedPhotos.length > 0) {
+                // Only cleanup if form is not submitted (no report saved)
+                const formSubmitted = sessionStorage.getItem('reportSubmitted') === 'true';
+                
+                if (!formSubmitted) {
+                    // Delete all uploaded photos from server
+                    capturedPhotos.forEach(photo => {
+                        fetch('{{ route("report.deletePhoto") }}', {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({
+                                photo_path: photo.path
+                            })
+                        })
+                        .catch(error => {
+                            console.error('Error cleaning up photo:', error);
+                        });
+                    });
+                }
+                
+                // Clear the flag
+                sessionStorage.removeItem('reportSubmitted');
+            }
+        }
+
         // Load draft data on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadDraftData();
+            
+            // Clear submission flag on page load
+            sessionStorage.removeItem('reportSubmitted');
         });
 
         // Get camera location (separate from form location)
@@ -708,23 +775,14 @@
             saveButton.disabled = true;
             saveButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
             
-            // Create new form data for draft
-            const draftData = new FormData();
-            draftData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
-            draftData.append('tanggal', '{{ now()->format('d F Y') }}');
-            draftData.append('lokasi', document.getElementById('lokasi').value);
-            draftData.append('laporan', document.getElementById('laporan').value);
-            draftData.append('masalah', document.getElementById('masalah').value);
-            draftData.append('solusi', document.getElementById('solusi').value);
-            
-            // Add photo evidence as array
+            // Add photo evidence to form data
             capturedPhotos.forEach((photo, index) => {
-                draftData.append(`photo_evidence[${index}]`, JSON.stringify(photo));
+                formData.append(`photo_evidence[${index}]`, JSON.stringify(photo));
             });
             
             fetch('{{ route("report.saveDraft") }}', {
                 method: 'POST',
-                body: draftData,
+                body: formData,
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 }
@@ -732,17 +790,19 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showNotification(data.message, 'success');
-                    // Redirect to drafts page after successful save
+                    // Mark form as submitted to prevent cleanup
+                    sessionStorage.setItem('reportSubmitted', 'true');
+                    showNotification('Draft berhasil disimpan!', 'success');
+                    // Redirect after a short delay
                     setTimeout(() => {
                         window.location.href = '{{ route("report.drafts") }}';
                     }, 1500);
                 } else {
-                    showNotification(data.error || 'Terjadi kesalahan', 'error');
+                    showNotification(data.error || 'Gagal menyimpan draft', 'error');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
+                console.error('Error saving draft:', error);
                 showNotification('Terjadi kesalahan saat menyimpan draft', 'error');
             })
             .finally(() => {
@@ -808,6 +868,8 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    // Mark form as submitted to prevent cleanup
+                    sessionStorage.setItem('reportSubmitted', 'true');
                     showNotification(data.message, 'success');
                     // Redirect to report history after successful submit
                     setTimeout(() => {
@@ -874,12 +936,14 @@
         // Cleanup camera when page unloads
         window.addEventListener('beforeunload', function() {
             stopCamera();
+            cleanupPhotos();
         });
 
         // Cleanup camera when navigating away
         document.addEventListener('visibilitychange', function() {
             if (document.hidden) {
                 stopCamera();
+                cleanupPhotos();
             }
         });
     </script>

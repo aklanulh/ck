@@ -31,6 +31,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/report/generate', [AuthController::class, 'generateReport'])->name('report.generate');
     Route::post('/report/save-draft', [AuthController::class, 'saveDraft'])->name('report.saveDraft');
     Route::post('/report/upload-photo', [AuthController::class, 'uploadPhoto'])->name('report.uploadPhoto');
+    Route::delete('/report/delete-photo', [AuthController::class, 'deletePhoto'])->name('report.deletePhoto');
     Route::delete('/report/delete-draft/{id}', [AuthController::class, 'deleteDraft'])->name('report.deleteDraft');
     Route::get('/report/history', [AuthController::class, 'showReportHistory'])->name('report.history');
     Route::get('/report/drafts', [AuthController::class, 'showDrafts'])->name('report.drafts');

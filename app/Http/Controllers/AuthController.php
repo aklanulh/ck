@@ -689,6 +689,49 @@ class AuthController extends Controller
     }
 
     /**
+     * Delete photo from server.
+     */
+    public function deletePhoto(Request $request)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $request->validate([
+                'photo_path' => 'required|string'
+            ]);
+
+            $photoPath = $request->input('photo_path');
+
+            // Security: Check if photo belongs to current user
+            if (strpos($photoPath, 'photos/photo_' . $user['id'] . '_') === false) {
+                return response()->json(['error' => 'Unauthorized photo access'], 403);
+            }
+
+            // Delete photo from storage
+            if (Storage::disk('public')->exists($photoPath)) {
+                Storage::disk('public')->delete($photoPath);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Foto berhasil dihapus dari server!'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'File tidak ditemukan di server'
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Gagal menghapus foto: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Delete photos from storage.
      */
     private function deletePhotos($photos)
