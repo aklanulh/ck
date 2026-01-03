@@ -11,6 +11,7 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
@@ -433,6 +434,40 @@ class AdminController extends Controller
             return redirect('/admin/settings')->with('success', 'Cache berhasil dibersihkan!');
         } catch (\Exception $e) {
             return redirect('/admin/settings')->with('error', 'Gagal membersihkan cache: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Generate one-time reset link for user
+     */
+    public function generateResetLink(Request $request, $id)
+    {
+        if (session('user')['role'] !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $user = User::findOrFail($id);
+
+            // Generate unique reset token
+            $token = Str::random(60);
+            $user->reset_token = $token;
+            $user->reset_token_expires = now()->addHours(24); // Valid for 24 hours
+            $user->save();
+
+            $resetLink = url("/reset-password/{$token}");
+
+            return response()->json([
+                'success' => true,
+                'message' => "Link reset password untuk {$user->name} ({$user->email}) telah dibuat",
+                'reset_link' => $resetLink,
+                'user_name' => $user->name,
+                'user_email' => $user->email,
+                'expires_at' => $user->reset_token_expires->format('d M Y H:i'),
+                'whatsapp_message' => "Halo {$user->name},\n\nLink reset password Anda: {$resetLink}\n\nLink berlaku sampai: " . $user->reset_token_expires->format('d M Y H:i') . "\n\nJangan bagikan link ini ke siapapun."
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Gagal generate link: ' . $e->getMessage()], 500);
         }
     }
 

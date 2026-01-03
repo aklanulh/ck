@@ -15,7 +15,7 @@
                 <i class="fas fa-briefcase text-white text-2xl"></i>
             </div>
             <h2 class="text-3xl font-bold text-gray-900">Lupa Password</h2>
-            <p class="text-gray-600 mt-2">Masukkan email untuk reset password</p>
+            <p class="text-gray-600 mt-2">Hubungi admin untuk reset password</p>
         </div>
 
         <!-- Error/Success Messages -->
@@ -32,154 +32,23 @@
             </div>
         @endif
 
-        <!-- Forgot Password Form -->
-        <div class="bg-white shadow-lg rounded-lg p-8">
-            <form id="forgotForm" class="space-y-6">
-                @csrf
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700">
-                        Email Address
-                    </label>
-                    <div class="mt-1">
-                        <input id="email" name="email" type="email" required
-                               class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                               placeholder="nama@email.com">
-                    </div>
-                </div>
-
-                <div>
-                    <button type="submit" 
-                            class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition">
-                        <i class="fas fa-paper-plane mr-2"></i>
-                        Kirim Link Reset
-                    </button>
-                </div>
-
-                <div class="text-center">
-                    <a href="/login" class="text-purple-600 hover:text-purple-500 text-sm font-medium">
-                        <i class="fas fa-arrow-left mr-1"></i>
-                        Kembali ke Login
-                    </a>
-                </div>
-            </form>
-        </div>
-
-        <!-- Manual Reset (Development Only) -->
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+        <!-- Admin Contact Info -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
             <div class="flex">
                 <div class="flex-shrink-0">
-                    <i class="fas fa-tools text-yellow-400 text-lg"></i>
+                    <i class="fas fa-user-shield text-blue-400 text-lg"></i>
                 </div>
                 <div class="ml-3">
-                    <h3 class="text-sm font-medium text-yellow-800">Reset Manual (Development)</h3>
-                    <p class="text-sm text-yellow-700 mt-1">Untuk development, gunakan form manual reset:</p>
-                    <form id="manualResetForm" class="mt-3 space-y-3">
-                        @csrf
-                        <input type="email" id="resetEmail" placeholder="Email user" required
-                               class="w-full px-3 py-2 border border-yellow-300 rounded-lg text-sm">
-                        <input type="password" id="resetPassword" placeholder="Password baru" required
-                               class="w-full px-3 py-2 border border-yellow-300 rounded-lg text-sm">
-                        <button type="submit" 
-                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg text-sm font-medium">
-                            <i class="fas fa-key mr-2"></i>
-                            Reset Password Manual
-                        </button>
-                    </form>
+                    <h3 class="text-sm font-medium text-blue-800">Hubungi Admin</h3>
+                    <p class="text-sm text-blue-700 mt-1">Untuk reset password, silakan hubungi admin developer sistem ini.</p>
+                    <p class="text-xs text-blue-500 mt-2">Admin akan memberikan link reset password khusus untuk Anda</p>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Forgot Password Form
-        document.getElementById('forgotForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Mengirim...';
-            
-            fetch('/forgot-password', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: formData.get('email')
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Link reset password: ' + data.reset_link + '\n\nCatatan: Dalam production link akan dikirim via email');
-                } else {
-                    alert('Error: ' + (data.message || 'Terjadi kesalahan'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Terjadi kesalahan saat mengirim link reset');
-            })
-            .finally(() => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            });
-        });
-
-        // Manual Reset Form
-        document.getElementById('manualResetForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('resetEmail').value;
-            const password = document.getElementById('resetPassword').value;
-            
-            if (!email || !password) {
-                alert('Email dan password baru harus diisi');
-                return;
-            }
-            
-            if (confirm('Reset password untuk ' + email + ' menjadi: ' + password + '?')) {
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Mereting...';
-                
-                fetch('/manual-reset-password', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        email: email,
-                        new_password: password
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.message);
-                        document.getElementById('resetEmail').value = '';
-                        document.getElementById('resetPassword').value = '';
-                    } else {
-                        alert('Error: ' + (data.message || 'Terjadi kesalahan'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Terjadi kesalahan saat mereset password');
-                })
-                .finally(() => {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalText;
-                });
-            }
-        });
+        // No form submission needed - just display contact info
     </script>
 </body>
 </html>

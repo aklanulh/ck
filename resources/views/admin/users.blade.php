@@ -76,11 +76,14 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div class="flex space-x-2">
-                                <a href="/admin/users/{{ $user->id }}/edit" class="text-blue-600 hover:text-blue-900">
+                                <a href="/admin/users/{{ $user->id }}/edit" class="text-blue-600 hover:text-blue-900" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
+                                <button onclick="generateResetLink({{ $user->id }}, '{{ $user->name }}', '{{ $user->email }}')" class="text-green-600 hover:text-green-900" title="Generate Reset Link">
+                                    <i class="fas fa-key"></i>
+                                </button>
                                 @if($user->id !== session('user')['id'])
-                                    <button onclick="deleteUser({{ $user->id }}, '{{ $user->name }}')" class="text-red-600 hover:text-red-900">
+                                    <button onclick="deleteUser({{ $user->id }}, '{{ $user->name }}')" class="text-red-600 hover:text-red-900" title="Hapus">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 @endif
@@ -148,8 +151,76 @@
     </div>
 </div>
 
+<!-- Reset Link Modal -->
+<div id="resetLinkModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-lg bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-green-100 rounded-full">
+                <i class="fas fa-key text-green-600"></i>
+            </div>
+            <div class="mt-4 text-center">
+                <h3 class="text-lg font-medium text-gray-900">Generate Link Reset Password</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">Buat link reset password untuk <strong id="resetUserName"></strong>?</p>
+                    <p class="text-xs text-gray-600 mt-2">Link akan berlaku selama 24 jam</p>
+                </div>
+                <div class="flex gap-3 mt-4">
+                    <button onclick="closeResetLinkModal()" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                        Batal
+                    </button>
+                    <button id="generateResetBtn" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-spinner fa-spin mr-2 hidden" id="resetSpinner"></i>
+                        Generate Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Link Result Modal -->
+<div id="resetResultModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[600px] shadow-lg rounded-lg bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-green-100 rounded-full">
+                <i class="fas fa-check text-green-600"></i>
+            </div>
+            <div class="mt-4 text-center">
+                <h3 class="text-lg font-medium text-gray-900">Link Reset Password Berhasil Dibuat</h3>
+                <div class="mt-4 px-7 py-3 text-left">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Link Reset Password:</label>
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="resetLink" readonly class="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm">
+                            <button onclick="copyResetLink()" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Pesan WhatsApp:</label>
+                        <textarea id="whatsappMessage" readonly class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm h-24"></textarea>
+                        <button onclick="copyWhatsAppMessage()" class="mt-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+                            <i class="fab fa-whatsapp mr-2"></i>Salin Pesan WhatsApp
+                        </button>
+                    </div>
+                    <div class="text-xs text-gray-500">
+                        <p>Berlaku sampai: <span id="expiresAt"></span></p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button onclick="closeResetResultModal()" class="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let deleteUserId = null;
+let resetUserId = null;
 
 function deleteUser(userId, userName) {
     deleteUserId = userId;
@@ -160,6 +231,49 @@ function deleteUser(userId, userName) {
 function closeDeleteModal() {
     document.getElementById('deleteModal').classList.add('hidden');
     deleteUserId = null;
+}
+
+function generateResetLink(userId, userName, userEmail) {
+    resetUserId = userId;
+    document.getElementById('resetUserName').textContent = userName + ' (' + userEmail + ')';
+    document.getElementById('resetLinkModal').classList.remove('hidden');
+}
+
+function closeResetLinkModal() {
+    document.getElementById('resetLinkModal').classList.add('hidden');
+    resetUserId = null;
+}
+
+function closeResetResultModal() {
+    document.getElementById('resetResultModal').classList.add('hidden');
+}
+
+function copyResetLink() {
+    const resetLink = document.getElementById('resetLink');
+    resetLink.select();
+    document.execCommand('copy');
+    
+    // Show feedback
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i>';
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+    }, 1000);
+}
+
+function copyWhatsAppMessage() {
+    const whatsappMessage = document.getElementById('whatsappMessage');
+    whatsappMessage.select();
+    document.execCommand('copy');
+    
+    // Show feedback
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check mr-2"></i>Tersalin!';
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+    }, 1000);
 }
 
 document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
@@ -183,6 +297,50 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', function()
         form.appendChild(methodInput);
         document.body.appendChild(form);
         form.submit();
+    }
+});
+
+// Generate Reset Link
+document.getElementById('generateResetBtn').addEventListener('click', function() {
+    if (resetUserId) {
+        const btn = this;
+        const spinner = document.getElementById('resetSpinner');
+        const originalText = btn.innerHTML;
+        
+        btn.disabled = true;
+        spinner.classList.remove('hidden');
+        
+        fetch('/admin/users/' + resetUserId + '/reset-link', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Fill result modal
+                document.getElementById('resetLink').value = data.reset_link;
+                document.getElementById('whatsappMessage').value = data.whatsapp_message;
+                document.getElementById('expiresAt').textContent = data.expires_at;
+                
+                // Close confirmation modal and show result
+                closeResetLinkModal();
+                document.getElementById('resetResultModal').classList.remove('hidden');
+            } else {
+                alert('Error: ' + (data.message || 'Gagal generate link'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat generate link reset');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            spinner.classList.add('hidden');
+            btn.innerHTML = originalText;
+        });
     }
 });
 
@@ -211,6 +369,18 @@ function refreshUsers() {
 document.getElementById('deleteModal').addEventListener('click', function(e) {
     if (e.target === this) {
         closeDeleteModal();
+    }
+});
+
+document.getElementById('resetLinkModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeResetLinkModal();
+    }
+});
+
+document.getElementById('resetResultModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeResetResultModal();
     }
 });
 </script>

@@ -59,6 +59,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
         Route::put('/admin/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
         Route::delete('/admin/users/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
+        Route::post('/admin/users/{id}/reset-link', [AdminController::class, 'generateResetLink'])->name('admin.users.reset-link');
 
         Route::get('/admin/absensi', [AdminController::class, 'absensi'])->name('admin.absensi');
         Route::delete('/admin/absensi/{id}', [AdminController::class, 'deleteAbsensi'])->name('admin.absensi.delete');
