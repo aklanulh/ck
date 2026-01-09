@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Models\Absensi;
 use App\Models\Report;
+use App\Models\Izin;
 
 class AuthController extends Controller
 {
@@ -728,6 +729,107 @@ class AuthController extends Controller
             return response()->json([
                 'error' => 'Gagal menghapus foto: ' . $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * Submit izin/cuti/sakit form.
+     */
+    public function submitIzin(Request $request)
+    {
+        $user = session('user');
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $request->validate([
+                'jenis_izin' => 'required|in:izin,cuti,sakit',
+                'tanggal_mulai' => 'required|date|after_or_equal:today',
+                'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
+                'alasan' => 'required|string|max:500',
+                'bukti' => 'nullable|file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240'
+            ]);
+
+            // Handle file upload
+            $buktiPath = null;
+            if ($request->hasFile('bukti')) {
+                $file = $request->file('bukti');
+                $fileName = 'izin_' . $user['id'] . '_' . time() . '.' . $file->getClientOriginalExtension();
+                $buktiPath = $file->storeAs('izin', $fileName, 'public');
+            }
+
+            // Store izin data to database
+            $izin = Izin::create([
+                'user_id' => $user['id'],
+                'jenis_izin' => $request->jenis_izin,
+                'tanggal_mulai' => $request->tanggal_mulai,
+                'tanggal_selesai' => $request->tanggal_selesai,
+                'alasan' => $request->alasan,
+                'bukti_path' => $buktiPath,
+                'status' => 'pending',
+            ]);
+
+            Log::info('Izin submitted:', $izin->toArray());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengajuan izin berhasil dikirim! Menunggu persetujuan admin.'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'messages' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Submit izin error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Terjadi kesalahan saat mengajukan izin. Silakan coba lagi.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get user izin history.
+     */
+    public function getUserIzinHistory(Request $request)
+    {
+        $user = session('user');
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $izinData = Izin::where('user_id', $user['id'])
+                ->latest()
+                ->get()
+                ->map(function ($izin) {
+                    return [
+                        'id' => $izin->id,
+                        'jenis_izin' => $izin->jenis_izin,
+                        'tanggal_mulai' => $izin->tanggal_mulai->format('Y-m-d'),
+                        'tanggal_selesai' => $izin->tanggal_selesai->format('Y-m-d'),
+                        'alasan' => $izin->alasan,
+                        'bukti_path' => $izin->bukti_path,
+                        'status' => $izin->status,
+                        'catatan_admin' => $izin->catatan_admin,
+                        'approved_at' => $izin->approved_at?->format('Y-m-d H:i:s'),
+                        'rejected_at' => $izin->rejected_at?->format('Y-m-d H:i:s'),
+                        'created_at' => $izin->created_at->format('d M Y H:i'),
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $izinData
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Get user izin history error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Gagal mengambil riwayat izin'
+            ], 500);
         }
     }
 

@@ -72,8 +72,34 @@
 <!-- Reports Table -->
 <div class="bg-white shadow rounded-lg overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-medium text-gray-900">Daftar Laporan</h3>
-        <p class="text-sm text-gray-500 mt-1">{{ $reports->count() }} laporan terdaftar</p>
+        <div class="flex justify-between items-center">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">Daftar Laporan</h3>
+                <p class="text-sm text-gray-500 mt-1">{{ $reports->count() }} laporan terdaftar</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <a href="{{ route('admin.reports', ['date' => $previousDate]) }}" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                    <i class="fas fa-chevron-left mr-2"></i>
+                    {{ \Carbon\Carbon::createFromFormat('Y-m-d', $previousDate)->format('d M') }}
+                </a>
+                <div class="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium">
+                    {{ $dateObj->format('d F Y') }}
+                    @if($date == now()->format('Y-m-d'))
+                        <span class="ml-2 text-xs bg-purple-700 px-2 py-1 rounded">Hari Ini</span>
+                    @endif
+                </div>
+                <a href="{{ route('admin.reports', ['date' => $nextDate]) }}" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                    {{ \Carbon\Carbon::createFromFormat('Y-m-d', $nextDate)->format('d M') }}
+                    <i class="fas fa-chevron-right ml-2"></i>
+                </a>
+                @if($date != now()->format('Y-m-d'))
+                    <a href="{{ route('admin.reports') }}" class="inline-flex items-center px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors">
+                        <i class="fas fa-calendar-day mr-2"></i>
+                        Hari Ini
+                    </a>
+                @endif
+            </div>
+        </div>
     </div>
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
@@ -114,6 +140,7 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                 @if($report->status == 'published') bg-green-100 text-green-800
+                                @elseif($report->status == 'draft') bg-gray-100 text-gray-800
                                 @else bg-yellow-100 text-yellow-800 @endif">
                                 {{ ucfirst($report->status) }}
                             </span>
@@ -136,27 +163,6 @@
             </tbody>
         </table>
     </div>
-    
-    <!-- Pagination -->
-    @if($reports->hasPages())
-        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div class="flex-1 flex justify-between sm:hidden">
-                {{ $reports->links() }}
-            </div>
-            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-sm text-gray-700">
-                        Menampilkan <span class="font-medium">{{ $reports->firstItem() }}</span> hingga 
-                        <span class="font-medium">{{ $reports->lastItem() }}</span> dari 
-                        <span class="font-medium">{{ $reports->total() }}</span> hasil
-                    </p>
-                </div>
-                <div>
-                    {{ $reports->links() }}
-                </div>
-            </div>
-        </div>
-    @endif
 </div>
 
 <!-- Delete Confirmation Modal -->

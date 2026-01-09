@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Absensi;
 use App\Models\Report;
 use App\Models\VisitSchedule;
+use App\Models\Izin;
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Artisan;
@@ -174,13 +175,21 @@ class AdminController extends Controller
     /**
      * Show all attendance records.
      */
-    public function absensi()
+    public function absensi(Request $request)
     {
         if (session('user')['role'] !== 'admin') {
             return redirect('/absensi')->with('error', 'Anda tidak memiliki akses ke halaman admin.');
         }
 
-        $absensi = Absensi::with('user')->latest()->paginate(20);
+        // Get the date from request or default to today
+        $date = $request->get('date', now()->format('Y-m-d'));
+        $dateObj = \Carbon\Carbon::createFromFormat('Y-m-d', $date);
+
+        // Get attendance for the specific date
+        $absensi = Absensi::with('user')
+            ->whereDate('created_at', $date)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         // Add time calculations for each attendance record
         foreach ($absensi as $absen) {
@@ -193,7 +202,14 @@ class AdminController extends Controller
             }
         }
 
-        return view('admin.absensi', compact('absensi'));
+        // Get izin data for the page
+        $izin = Izin::with('user')->latest()->paginate(10);
+
+        // Calculate previous and next dates
+        $previousDate = $dateObj->copy()->subDay()->format('Y-m-d');
+        $nextDate = $dateObj->copy()->addDay()->format('Y-m-d');
+
+        return view('admin.absensi', compact('absensi', 'izin', 'date', 'previousDate', 'nextDate', 'dateObj'));
     }
 
     /**
@@ -276,14 +292,28 @@ class AdminController extends Controller
     /**
      * Show all reports.
      */
-    public function reports()
+    public function reports(Request $request)
     {
         if (session('user')['role'] !== 'admin') {
             return redirect('/absensi')->with('error', 'Anda tidak memiliki akses ke halaman admin.');
         }
 
-        $reports = Report::with('user')->where('status', '!=', 'draft')->latest()->paginate(20);
-        return view('admin.reports', compact('reports'));
+        // Get the date from request or default to today
+        $date = $request->get('date', now()->format('Y-m-d'));
+        $dateObj = \Carbon\Carbon::createFromFormat('Y-m-d', $date);
+
+        // Get reports for the specific date
+        $reports = Report::with('user')
+            ->where('status', '!=', 'draft')
+            ->whereDate('tanggal', $date)
+            ->orderBy('tanggal', 'desc')
+            ->get();
+
+        // Calculate previous and next dates
+        $previousDate = $dateObj->copy()->subDay()->format('Y-m-d');
+        $nextDate = $dateObj->copy()->addDay()->format('Y-m-d');
+
+        return view('admin.reports', compact('reports', 'date', 'previousDate', 'nextDate', 'dateObj'));
     }
 
     /**
@@ -482,6 +512,461 @@ class AdminController extends Controller
                     Storage::disk('public')->delete($photo['path']);
                 }
             }
+        }
+    }
+
+    /**
+     * Get izin data for admin management.
+     */
+    public function getIzinList(Request $request)
+    {
+        if (session('user')['role'] !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $izinQuery = Izin::with(['user', 'approvedBy', 'rejectedBy'])->latest();
+
+            // Apply filters
+            if ($request->has('status') && $request->status) {
+                $izinQuery->where('status', $request->status);
+            }
+
+            if ($request->has('jenis') && $request->jenis) {
+                $izinQuery->where('jenis_izin', $request->jenis);
+            }
+
+            $izinData = $izinQuery->get()->map(function ($izin) {
+                return [
+                    'id' => $izin->id,
+                    'user_id' => $izin->user_id,
+                    'user_name' => $izin->user->name,
+                    'user_email' => $izin->user->email,
+                    'jenis_izin' => $izin->jenis_izin,
+                    'tanggal_mulai' => $izin->tanggal_mulai->format('Y-m-d'),
+                    'tanggal_selesai' => $izin->tanggal_selesai->format('Y-m-d'),
+                    'alasan' => $izin->alasan,
+                    'bukti_path' => $izin->bukti_path,
+                    'status' => $izin->status,
+                    'catatan_admin' => $izin->catatan_admin,
+                    'approved_at' => $izin->approved_at?->format('Y-m-d H:i:s'),
+                    'rejected_at' => $izin->rejected_at?->format('Y-m-d H:i:s'),
+                    'approved_by_name' => $izin->approvedBy?->name,
+                    'rejected_by_name' => $izin->rejectedBy?->name,
+                    'created_at' => $izin->created_at->format('Y-m-d H:i:s'),
+                ];
+            });
+
+            // Get statistics
+            $stats = [
+                'pending' => Izin::where('status', 'pending')->count(),
+                'approved' => Izin::where('status', 'approved')->count(),
+                'rejected' => Izin::where('status', 'rejected')->count(),
+                'total' => Izin::count(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $izinData,
+                'stats' => $stats
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to load izin data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get izin data for admin management.
+     */
+    public function getIzinData(Request $request)
+    {
+        if (session('user')['role'] !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $izinQuery = Izin::with(['user', 'approvedBy', 'rejectedBy'])->latest();
+
+            // Apply filters
+            if ($request->has('status') && $request->status) {
+                $izinQuery->where('status', $request->status);
+            }
+
+            if ($request->has('jenis_izin') && $request->jenis_izin) {
+                $izinQuery->where('jenis_izin', $request->jenis_izin);
+            }
+
+            $izinData = $izinQuery->get()->map(function ($izin) {
+                return [
+                    'id' => $izin->id,
+                    'user_id' => $izin->user_id,
+                    'user_name' => $izin->user->name,
+                    'user_email' => $izin->user->email,
+                    'jenis_izin' => $izin->jenis_izin,
+                    'tanggal_mulai' => $izin->tanggal_mulai->format('Y-m-d'),
+                    'tanggal_selesai' => $izin->tanggal_selesai->format('Y-m-d'),
+                    'alasan' => $izin->alasan,
+                    'bukti_path' => $izin->bukti_path,
+                    'status' => $izin->status,
+                    'catatan_admin' => $izin->catatan_admin,
+                    'approved_at' => $izin->approved_at?->format('Y-m-d H:i:s'),
+                    'rejected_at' => $izin->rejected_at?->format('Y-m-d H:i:s'),
+                    'approved_by_name' => $izin->approvedBy?->name,
+                    'rejected_by_name' => $izin->rejectedBy?->name,
+                    'created_at' => $izin->created_at->format('Y-m-d H:i:s'),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $izinData
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Gagal mengambil data izin: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Approve izin request.
+     */
+    public function approveIzin(Request $request)
+    {
+        if (session('user')['role'] !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $izinId = $request->input('izin_id');
+            $izin = Izin::findOrFail($izinId);
+            $adminId = session('user')['id'];
+
+            if ($izin->approve($adminId, $request->catatan_admin)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pengajuan izin berhasil disetujui'
+                ]);
+            }
+
+            return response()->json(['error' => 'Gagal menyetujui izin'], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Gagal menyetujui izin: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Reject izin request.
+     */
+    public function rejectIzin(Request $request)
+    {
+        if (session('user')['role'] !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $izinId = $request->input('izin_id');
+            $izin = Izin::findOrFail($izinId);
+            $adminId = session('user')['id'];
+
+            if ($izin->reject($adminId, $request->catatan_admin)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pengajuan izin berhasil ditolak'
+                ]);
+            }
+
+            return response()->json(['error' => 'Gagal menolak izin'], 500);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Gagal menolak izin: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get attendance data for weekly calendar view.
+     */
+    public function getAttendanceWeekly(Request $request)
+    {
+        if (session('user')['role'] !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $startDate = $request->get('start_date');
+            $endDate = $request->get('end_date');
+
+            if (!$startDate || !$endDate) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Start date and end date parameters are required'
+                ], 400);
+            }
+
+            // Get all users (including admin)
+            $users = \App\Models\User::all();
+
+            // Get attendance data for the week
+            $attendances = Absensi::with('user')
+                ->whereDate('created_at', '>=', $startDate)
+                ->whereDate('created_at', '<=', $endDate)
+                ->get();
+
+            // Group attendance by user and date
+            $attendanceData = [];
+            foreach ($attendances as $attendance) {
+                $date = $attendance->created_at->format('Y-m-d');
+                $userId = $attendance->user_id;
+
+                if (!isset($attendanceData[$userId])) {
+                    $attendanceData[$userId] = [];
+                }
+
+                $attendanceData[$userId][$date] = [
+                    'id' => $attendance->id,
+                    'user_id' => $attendance->user_id,
+                    'status' => $attendance->status,
+                    'check_in' => $attendance->check_in,
+                    'check_out' => $attendance->check_out,
+                    'check_in_location' => $attendance->check_in_location,
+                    'check_out_location' => $attendance->check_out_location,
+                    'keterangan' => $attendance->keterangan,
+                    'created_at' => $attendance->created_at->format('Y-m-d H:i:s'),
+                ];
+            }
+
+            // Prepare users data
+            $usersData = $users->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'users' => $usersData,
+                    'attendance' => $attendanceData
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to load weekly data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get attendance details for specific date.
+     */
+    public function getAttendanceDetail(Request $request)
+    {
+        if (session('user')['role'] !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $date = $request->get('date');
+
+            if (!$date) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Date parameter is required'
+                ], 400);
+            }
+
+            $attendances = Absensi::with('user')
+                ->whereDate('created_at', $date)
+                ->get();
+
+            $attendanceData = $attendances->map(function ($attendance) {
+                return [
+                    'id' => $attendance->id,
+                    'user_id' => $attendance->user_id,
+                    'user_name' => $attendance->user->name,
+                    'user_email' => $attendance->user->email,
+                    'status' => $attendance->status,
+                    'check_in' => $attendance->check_in,
+                    'check_out' => $attendance->check_out,
+                    'check_in_location' => $attendance->check_in_location,
+                    'check_out_location' => $attendance->check_out_location,
+                    'keterangan' => $attendance->keterangan,
+                    'created_at' => $attendance->created_at->format('Y-m-d H:i:s'),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $attendanceData
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to load attendance details: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get izin detail by ID.
+     */
+    public function getIzinDetail($id)
+    {
+        if (session('user')['role'] !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $izin = Izin::with(['user', 'approvedBy', 'rejectedBy'])->findOrFail($id);
+
+            $izinData = [
+                'id' => $izin->id,
+                'user_id' => $izin->user_id,
+                'user_name' => $izin->user->name,
+                'user_email' => $izin->user->email,
+                'jenis_izin' => $izin->jenis_izin,
+                'tanggal_mulai' => $izin->tanggal_mulai->format('Y-m-d'),
+                'tanggal_selesai' => $izin->tanggal_selesai->format('Y-m-d'),
+                'alasan' => $izin->alasan,
+                'bukti_path' => $izin->bukti_path,
+                'status' => $izin->status,
+                'catatan_admin' => $izin->catatan_admin,
+                'approved_at' => $izin->approved_at?->format('Y-m-d H:i:s'),
+                'rejected_at' => $izin->rejected_at?->format('Y-m-d H:i:s'),
+                'approved_by_name' => $izin->approvedBy?->name,
+                'rejected_by_name' => $izin->rejectedBy?->name,
+                'created_at' => $izin->created_at->format('Y-m-d H:i:s'),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'izin' => $izinData
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to load izin detail: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get monthly attendance chart data for specific user.
+     */
+    public function getUserAttendanceChart(Request $request)
+    {
+        if (session('user')['role'] !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $userId = $request->get('user_id');
+            $month = $request->get('month', now()->format('Y-m'));
+
+            if (!$userId) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'User ID is required'
+                ], 400);
+            }
+
+            // Parse month to get start and end dates
+            $startDate = \Carbon\Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+            $endDate = \Carbon\Carbon::createFromFormat('Y-m', $month)->endOfMonth();
+
+            // Get attendance data for the month
+            $attendances = Absensi::where('user_id', $userId)
+                ->whereDate('tanggal', '>=', $startDate)
+                ->whereDate('tanggal', '<=', $endDate)
+                ->orderBy('tanggal')
+                ->get();
+
+            // Get user info
+            $user = User::find($userId);
+
+            // Prepare chart data
+            $chartData = [];
+            $checkInTimes = [];
+            $checkOutTimes = [];
+
+            foreach ($attendances as $attendance) {
+                $date = $attendance->tanggal->format('Y-m-d');
+                $day = $attendance->tanggal->format('d');
+
+                $chartData[] = [
+                    'date' => $date,
+                    'day' => $day,
+                    'check_in' => $attendance->check_in,
+                    'check_out' => $attendance->check_out,
+                    'status' => $attendance->status,
+                    'total_hours' => $attendance->total_jam
+                ];
+
+                // Extract times for chart (convert to decimal hours)
+                if ($attendance->check_in) {
+                    $checkInTime = \Carbon\Carbon::createFromFormat('H:i:s', $attendance->check_in);
+                    $checkInTimes[] = [
+                        'x' => $day,
+                        'y' => $checkInTime->hour + ($checkInTime->minute / 60)
+                    ];
+                }
+
+                if ($attendance->check_out) {
+                    $checkOutTime = \Carbon\Carbon::createFromFormat('H:i:s', $attendance->check_out);
+                    $checkOutTimes[] = [
+                        'x' => $day,
+                        'y' => $checkOutTime->hour + ($checkOutTime->minute / 60)
+                    ];
+                }
+            }
+
+            // Calculate statistics
+            $totalDays = $attendances->count();
+            $hadirCount = $attendances->where('status', 'hadir')->count();
+            $terlambatCount = $attendances->where('status', 'terlambat')->count();
+            $izinCount = $attendances->where('status', 'izin')->count();
+            $alfaCount = $attendances->where('status', 'alfa')->count();
+
+            $stats = [
+                'total_days' => $totalDays,
+                'hadir' => $hadirCount,
+                'terlambat' => $terlambatCount,
+                'izin' => $izinCount,
+                'alfa' => $alfaCount,
+                'attendance_rate' => $totalDays > 0 ? round(($hadirCount + $terlambatCount) / $totalDays * 100, 1) : 0
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email
+                    ],
+                    'month' => $month,
+                    'month_name' => $startDate->format('F Y'),
+                    'chart_data' => $chartData,
+                    'check_in_times' => $checkInTimes,
+                    'check_out_times' => $checkOutTimes,
+                    'stats' => $stats
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to load attendance chart data: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

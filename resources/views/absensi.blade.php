@@ -444,6 +444,143 @@
                     @endif
                 </div>
             </div>
+
+            <!-- Formulir Izin/Cuti/Sakit -->
+            <div class="bg-white rounded-lg shadow-lg p-4 sm:p-6 mt-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
+                    <div class="mb-3 sm:mb-0">
+                        <h3 class="text-lg sm:text-xl font-semibold text-gray-900">Formulir Izin/Cuti/Sakit</h3>
+                        <p class="text-gray-500 mt-1 text-sm">Ajukan izin, cuti, atau laporan sakit</p>
+                    </div>
+                    <div class="text-xs text-gray-500">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Maksimal 30 hari, file maks. 10MB
+                    </div>
+                </div>
+
+                <form action="/api/submit-izin" method="POST" id="izinForm" class="space-y-4">
+                    @csrf
+                    
+                    <!-- Jenis Izin -->
+                    <div>
+                        <label for="jenis_izin" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-file-alt mr-2 text-gray-400"></i>Jenis Izin
+                        </label>
+                        <select 
+                            id="jenis_izin" 
+                            name="jenis_izin"
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                            <option value="">-- Pilih Jenis Izin --</option>
+                            <option value="izin">Izin</option>
+                            <option value="cuti">Cuti</option>
+                            <option value="sakit">Sakit</option>
+                        </select>
+                    </div>
+
+                    <!-- Tanggal Mulai -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="tanggal_mulai" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-calendar-alt mr-2 text-gray-400"></i>Tanggal Mulai
+                            </label>
+                            <div class="flex space-x-2">
+                                <input 
+                                    type="date" 
+                                    id="tanggal_mulai" 
+                                    name="tanggal_mulai"
+                                    required
+                                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                <button 
+                                    type="button"
+                                    onclick="setToday('tanggal_mulai')"
+                                    class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition text-sm whitespace-nowrap">
+                                    Hari Ini
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tanggal Selesai -->
+                        <div>
+                            <label for="tanggal_selesai" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-calendar-check mr-2 text-gray-400"></i>Tanggal Selesai
+                            </label>
+                            <div class="flex space-x-2">
+                                <input 
+                                    type="date" 
+                                    id="tanggal_selesai" 
+                                    name="tanggal_selesai"
+                                    required
+                                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                <button 
+                                    type="button"
+                                    onclick="setToday('tanggal_selesai')"
+                                    class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition text-sm whitespace-nowrap">
+                                    Hari Ini
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alasan -->
+                    <div>
+                        <label for="alasan" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-comment-alt mr-2 text-gray-400"></i>Alasan
+                        </label>
+                        <textarea 
+                            id="alasan" 
+                            name="alasan"
+                            rows="3"
+                            maxlength="500"
+                            placeholder="Jelaskan alasan izin/cuti/sakit Anda..."
+                            required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"></textarea>
+                        <div class="mt-2 flex items-center justify-between">
+                            <p class="text-xs text-gray-500">Jelaskan alasan Anda secara detail</p>
+                            <span class="text-xs text-gray-500" id="alasanCount">0/500</span>
+                        </div>
+                    </div>
+
+                    <!-- Bukti (opsional) -->
+                    <div>
+                        <label for="bukti" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-paperclip mr-2 text-gray-400"></i>Bukti (Opsional)
+                        </label>
+                        <input 
+                            type="file" 
+                            id="bukti" 
+                            name="bukti"
+                            accept="image/*,.pdf,.doc,.docx"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        <p class="text-xs text-gray-500 mt-1">Upload surat dokter, surat izin, atau bukti pendukung lainnya (maks. 10MB)</p>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex justify-between items-center pt-4 border-t">
+                        <button 
+                            type="button"
+                            onclick="showIzinHistory()"
+                            class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition text-sm">
+                            <i class="fas fa-history mr-2"></i>Riwayat Izin
+                        </button>
+                        <div class="flex space-x-3">
+                            <button 
+                                type="button"
+                                onclick="resetIzinForm()"
+                                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition text-sm">
+                                <i class="fas fa-times mr-2"></i>Reset
+                            </button>
+                            <button 
+                                type="submit"
+                                id="submitIzinButton"
+                                class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition text-sm">
+                                <i class="fas fa-paper-plane mr-2"></i>Ajukan Izin
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -1353,6 +1490,300 @@
                 console.log('Status check failed:', error);
             }
         }, 10000); // Check every 10 seconds
+
+        // Update alasan character count
+        function updateAlasanCount() {
+            const alasanElement = document.getElementById('alasan');
+            const countElement = document.getElementById('alasanCount');
+            
+            if (!alasanElement || !countElement) {
+                return;
+            }
+            
+            const alasan = alasanElement.value;
+            const count = alasan.length;
+            countElement.textContent = `${count}/500`;
+        }
+
+        // Reset izin form
+        function resetIzinForm() {
+            const form = document.getElementById('izinForm');
+            if (form) {
+                form.reset();
+                updateAlasanCount();
+                showNotification('Formulir direset', 'success');
+            }
+        }
+
+        // Set today's date to input field
+        function setToday(fieldId) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const todayStr = yyyy + '-' + mm + '-' + dd;
+            
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.value = todayStr;
+                showNotification(`Tanggal ${fieldId === 'tanggal_mulai' ? 'mulai' : 'selesai'} diset ke hari ini`, 'success');
+            }
+        }
+
+        // Submit izin form
+        document.addEventListener('DOMContentLoaded', function() {
+            const izinForm = document.getElementById('izinForm');
+            const alasanTextarea = document.getElementById('alasan');
+            const fileInput = document.getElementById('bukti');
+            
+            if (alasanTextarea) {
+                alasanTextarea.addEventListener('input', updateAlasanCount);
+            }
+            
+            // File validation
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const maxSize = 10 * 1024 * 1024; // 10MB
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+                        
+                        if (!allowedTypes.includes(file.type)) {
+                            showNotification('File harus berupa gambar (JPG/PNG), PDF, atau dokumen Word!', 'error');
+                            e.target.value = '';
+                            return;
+                        }
+                        
+                        if (file.size > maxSize) {
+                            showNotification('File maksimal 10MB!', 'error');
+                            e.target.value = '';
+                            return;
+                        }
+                    }
+                });
+            }
+            
+            if (izinForm) {
+                izinForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const submitButton = document.getElementById('submitIzinButton');
+                    const originalText = submitButton.innerHTML;
+                    
+                    // Validate dates
+                    const tanggalMulai = document.getElementById('tanggal_mulai').value;
+                    const tanggalSelesai = document.getElementById('tanggal_selesai').value;
+                    const jenisIzin = document.getElementById('jenis_izin').value;
+                    const alasan = document.getElementById('alasan').value;
+                    
+                    if (!jenisIzin || !tanggalMulai || !tanggalSelesai || !alasan) {
+                        showNotification('Semua field wajib diisi!', 'error');
+                        return;
+                    }
+                    
+                    if (new Date(tanggalSelesai) < new Date(tanggalMulai)) {
+                        showNotification('Tanggal selesai tidak boleh lebih awal dari tanggal mulai!', 'error');
+                        return;
+                    }
+                    
+                    // Check if duration is more than 30 days
+                    const mulaiDate = new Date(tanggalMulai);
+                    const selesaiDate = new Date(tanggalSelesai);
+                    const diffTime = Math.abs(selesaiDate - mulaiDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+                    
+                    if (diffDays > 30) {
+                        showNotification('Maksimal durasi izin adalah 30 hari!', 'error');
+                        return;
+                    }
+                    
+                    // Check if dates are in the past
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    mulaiDate.setHours(0, 0, 0, 0);
+                    
+                    if (mulaiDate < today) {
+                        showNotification('Tanggal mulai tidak boleh di masa lalu!', 'error');
+                        return;
+                    }
+                    
+                    // Check file size (only if file is selected)
+                    const fileInput = document.getElementById('bukti');
+                    if (fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        const maxSize = 10 * 1024 * 1024; // 10MB
+                        if (file.size > maxSize) {
+                            showNotification('File bukti maksimal 10MB!', 'error');
+                            return;
+                        }
+                    }
+                    
+                    // Show loading state
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Mengajukan...';
+                    
+                    try {
+                        const formData = new FormData(izinForm);
+                        
+                        const response = await fetch('/api/submit-izin', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: formData
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                        showNotification('Pengajuan izin berhasil dikirim! Menunggu persetujuan admin.', 'success');
+                        resetIzinForm();
+                    } else {
+                            showNotification(data.error || 'Gagal mengajukan izin', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Submit izin error:', error);
+                        showNotification('Terjadi kesalahan saat mengajukan izin', 'error');
+                    } finally {
+                        // Restore button
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalText;
+                    }
+                });
+            }
+        });
+
+        // Show izin history
+        function showIzinHistory() {
+            try {
+                // Fetch izin data from API
+                fetch('/api/user/izin-history')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            renderIzinHistoryModal(data.data);
+                        } else {
+                            showNotification('Gagal memuat riwayat izin', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading izin history:', error);
+                        showNotification('Gagal memuat riwayat izin', 'error');
+                    });
+            } catch (error) {
+                console.error('Error in showIzinHistory:', error);
+                showNotification('Gagal memuat riwayat izin', 'error');
+            }
+        }
+
+        // Render izin history modal
+        function renderIzinHistoryModal(izinData) {
+            if (izinData.length === 0) {
+                showNotification('Belum ada riwayat pengajuan izin', 'info');
+                return;
+            }
+            
+            // Create modal to show history
+            let historyHtml = '<div class="bg-white rounded-lg shadow-xl p-6 max-w-2xl max-h-96 overflow-y-auto">';
+            historyHtml += '<h3 class="text-lg font-semibold text-gray-900 mb-4">Riwayat Pengajuan Izin</h3>';
+            historyHtml += '<div class="space-y-3">';
+            
+            izinData.forEach((izin) => {
+                const statusColor = izin.status === 'approved' ? 'green' : izin.status === 'rejected' ? 'red' : 'yellow';
+                const statusText = izin.status === 'approved' ? 'Disetujui' : izin.status === 'rejected' ? 'Ditolak' : 'Menunggu';
+                
+                historyHtml += `
+                    <div class="border rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${statusColor}-100 text-${statusColor}-800">
+                                    ${statusText}
+                                </span>
+                                <h4 class="font-medium text-gray-900 mt-1">${izin.jenis_izin.charAt(0).toUpperCase() + izin.jenis_izin.slice(1)}</h4>
+                            </div>
+                            <span class="text-xs text-gray-500">${izin.created_at}</span>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            <p><i class="fas fa-calendar mr-2"></i>${izin.tanggal_mulai} - ${izin.tanggal_selesai}</p>
+                            <p class="mt-1"><i class="fas fa-comment mr-2"></i>${izin.alasan}</p>
+                            ${izin.bukti_path ? `<p class="mt-1"><a href="javascript:void(0)" onclick="viewBukti('${izin.bukti_path}')" class="text-xs text-blue-600 hover:text-blue-800 underline"><i class="fas fa-paperclip mr-1"></i>Lihat Bukti</a></p>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            historyHtml += '</div>';
+            historyHtml += '<div class="mt-4 flex justify-end">';
+            historyHtml += '<button onclick="closeIzinHistoryModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition text-sm">Tutup</button>';
+            historyHtml += '</div></div>';
+            
+            // Create and show modal
+            const modal = document.createElement('div');
+            modal.id = 'izinHistoryModal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = historyHtml;
+            document.body.appendChild(modal);
+        }
+
+        // View bukti image/file
+        function viewBukti(buktiPath) {
+            // Create modal to show bukti
+            let modalHtml = '<div id="buktiModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">';
+            modalHtml += '<div class="bg-white rounded-lg shadow-xl max-w-4xl max-h-[90vh] overflow-auto">';
+            modalHtml += '<div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">';
+            modalHtml += '<h3 class="text-lg font-semibold text-gray-900">Bukti Izin</h3>';
+            modalHtml += '<button onclick="closeBuktiModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>';
+            modalHtml += '</div>';
+            modalHtml += '<div class="p-6">';
+            
+            // Check if it's an image or document
+            const isImage = buktiPath.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+            
+            if (isImage) {
+                modalHtml += `<img src="/storage/${buktiPath}" alt="Bukti Izin" class="max-w-full h-auto rounded-lg shadow-md" onerror="this.onerror=null; this.src='/images/no-image.png'; this.alt='Gambar tidak dapat dimuat';">`;
+            } else {
+                // For documents, show download link
+                modalHtml += '<div class="text-center py-8">';
+                modalHtml += '<i class="fas fa-file-alt text-gray-400 text-6xl mb-4"></i>';
+                modalHtml += '<p class="text-gray-600 mb-4">Dokumen tidak dapat ditampilkan langsung</p>';
+                modalHtml += `<a href="/storage/${buktiPath}" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition">`;
+                modalHtml += '<i class="fas fa-download mr-2"></i>Download Dokumen</a>';
+                modalHtml += '</div>';
+            }
+            
+            modalHtml += '</div>';
+            modalHtml += '</div>';
+            modalHtml += '</div>';
+            
+            // Create and show modal
+            const modal = document.createElement('div');
+            modal.innerHTML = modalHtml;
+            document.body.appendChild(modal.firstElementChild);
+        }
+
+        // Close bukti modal
+        function closeBuktiModal() {
+            const modal = document.getElementById('buktiModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Close izin history modal
+        function closeIzinHistoryModal() {
+            const modal = document.getElementById('izinHistoryModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('izinHistoryModal');
+            if (modal && !modal.contains(event.target) && !event.target.closest('button[onclick="showIzinHistory()"]')) {
+                closeIzinHistoryModal();
+            }
+        });
 
         // Mobile menu toggle
         function toggleMobileMenu() {

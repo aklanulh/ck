@@ -43,6 +43,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/attendance-history', [AuthController::class, 'getAttendanceHistory']);
     Route::post('/api/clear-cache', [AuthController::class, 'clearUserCache']);
 
+    // API routes for izin
+    Route::post('/api/submit-izin', [AuthController::class, 'submitIzin']);
+    Route::get('/api/user/izin-history', [AuthController::class, 'getUserIzinHistory']);
+
     // Calendar routes
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar');
     Route::get('/calendar/events', [CalendarController::class, 'getEvents'])->name('calendar.events');
@@ -63,6 +67,18 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/admin/absensi', [AdminController::class, 'absensi'])->name('admin.absensi');
         Route::delete('/admin/absensi/{id}', [AdminController::class, 'deleteAbsensi'])->name('admin.absensi.delete');
+
+        // API routes for izin management
+        Route::get('/api/admin/izin-list', [AdminController::class, 'getIzinList']);
+        Route::get('/api/admin/izin-detail/{id}', [AdminController::class, 'getIzinDetail']);
+        Route::post('/api/admin/approve-izin', [AdminController::class, 'approveIzin']);
+        Route::post('/api/admin/reject-izin', [AdminController::class, 'rejectIzin']);
+
+        // API routes for calendar attendance
+        Route::get('/api/admin/attendance-weekly', [AdminController::class, 'getAttendanceWeekly']);
+        Route::get('/api/admin/attendance-detail', [AdminController::class, 'getAttendanceDetail']);
+        Route::get('/api/admin/user-attendance-chart', [AdminController::class, 'getUserAttendanceChart']);
+
         Route::get('/admin/reports', [AdminController::class, 'reports'])->name('admin.reports');
         Route::get('/admin/reports/{id}', [AdminController::class, 'showReport'])->name('admin.reports.show');
         Route::delete('/admin/reports/{id}', [AdminController::class, 'deleteReport'])->name('admin.reports.delete');
