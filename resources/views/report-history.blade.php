@@ -36,6 +36,11 @@
                         </a>
                     @endif
                     
+                    <!-- Absensi Menu -->
+                    <a href="{{ route('absensi') }}" class="py-4 px-1 border-b-2 border-transparent text-purple-600 hover:text-purple-800 hover:border-purple-300 font-medium flex items-center">
+                        <i class="fas fa-clock mr-2"></i>Absensi
+                    </a>
+                    
                     <!-- Daily Report Menu -->
                     <a href="{{ route('report') }}" class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium flex items-center">
                         <i class="fas fa-file-alt mr-2"></i>Daily Report
@@ -84,6 +89,11 @@
         <!-- Mobile menu -->
         <div id="mobileMenu" class="hidden md:hidden bg-white border-t">
             <div class="px-4 py-3 space-y-2">
+                <!-- Absensi Mobile Menu -->
+                <a href="{{ route('absensi') }}" class="block py-2 px-3 text-purple-600 bg-purple-50 rounded-lg transition-colors">
+                    <i class="fas fa-clock mr-2"></i>Absensi
+                </a>
+                
                 <!-- Daily Report Mobile Menu -->
                 <a href="{{ route('report') }}" class="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                     <i class="fas fa-file-alt mr-2"></i>Daily Report

@@ -766,7 +766,7 @@
 
     function viewBukti(buktiPath) {
         // Open file in new window or show modal
-        window.open(`/storage/${buktiPath}`, '_blank');
+        window.open(`/public/storage/izin/${buktiPath}`, '_blank');
     }
 
     // Delete absensi functions
@@ -909,11 +909,11 @@
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Bukti</label>
                     <div class="border rounded-lg overflow-hidden">
-                        <img src="/storage/${izin.bukti_path}" alt="Bukti Izin" class="w-full h-auto max-h-96 object-contain bg-gray-50" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <img src="/public/storage/izin/${izin.bukti_path}" alt="Bukti Izin" class="w-full h-auto max-h-96 object-contain bg-gray-50" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                         <div class="hidden p-4 text-center text-gray-500 bg-gray-50">
                             <i class="fas fa-file-alt text-2xl mb-2"></i>
                             <p class="text-sm">File bukti tidak dapat ditampilkan</p>
-                            <a href="/storage/${izin.bukti_path}" target="_blank" class="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors mt-2">
+                            <a href="/public/storage/izin/${izin.bukti_path}" target="_blank" class="inline-flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors mt-2">
                                 <i class="fas fa-external-link-alt mr-1"></i>
                                 Buka di Tab Baru
                             </a>
