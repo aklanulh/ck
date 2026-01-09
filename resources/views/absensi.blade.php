@@ -1740,13 +1740,13 @@
             const isImage = buktiPath.match(/\.(jpg|jpeg|png|gif|webp)$/i);
             
             if (isImage) {
-                modalHtml += `<img src="/public/storage/izin/${buktiPath}" alt="Bukti Izin" class="max-w-full h-auto rounded-lg shadow-md" onerror="this.onerror=null; this.src='/images/no-image.png'; this.alt='Gambar tidak dapat dimuat';">`;
+                modalHtml += `<img src="/public/storage/${buktiPath}" alt="Bukti Izin" class="max-w-full h-auto rounded-lg shadow-md" onerror="this.onerror=null; this.src='/images/no-image.png'; this.alt='Gambar tidak dapat dimuat';">`;
             } else {
                 // For documents, show download link
                 modalHtml += '<div class="text-center py-8">';
                 modalHtml += '<i class="fas fa-file-alt text-gray-400 text-6xl mb-4"></i>';
                 modalHtml += '<p class="text-gray-600 mb-4">Dokumen tidak dapat ditampilkan langsung</p>';
-                modalHtml += `<a href="/public/storage/izin/${buktiPath}" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition">`;
+                modalHtml += `<a href="/public/storage/${buktiPath}" target="_blank" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition">`;
                 modalHtml += '<i class="fas fa-download mr-2"></i>Download Dokumen</a>';
                 modalHtml += '</div>';
             }
