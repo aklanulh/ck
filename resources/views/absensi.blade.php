@@ -164,9 +164,14 @@
                         <h3 class="text-lg sm:text-xl font-semibold text-gray-900">Lokasi Absensi</h3>
                         <p class="text-gray-500 mt-1 text-sm">Lokasi Anda saat ini</p>
                     </div>
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center space-x-3">
                         <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse" id="gpsStatusIndicator"></div>
                         <span class="text-sm text-green-600 font-medium" id="gpsStatusText">GPS Aktif</span>
+                        <button onclick="refreshLocation()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center">
+                            <i class="fas fa-sync-alt mr-1"></i>
+                            <span class="hidden sm:inline">Refresh Lokasi</span>
+                            <span class="sm:hidden">Refresh</span>
+                        </button>
                     </div>
                 </div>
 

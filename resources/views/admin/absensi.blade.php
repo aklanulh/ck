@@ -487,65 +487,67 @@
 
         <!-- Attendance Chart Modal -->
         <div id="attendanceChartModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-10 mx-auto p-5 border w-full max-w-6xl shadow-lg rounded-md bg-white">
-                <div class="mt-3">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900">
+            <div class="relative top-2 mx-auto p-3 sm:p-5 border w-full max-w-6xl sm:max-w-4xl lg:max-w-6xl shadow-lg rounded-md bg-white m-2 sm:m-4">
+                <div class="mt-2 sm:mt-3">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-3">
+                        <h3 class="text-base sm:text-lg leading-6 font-medium text-gray-900">
                             <i class="fas fa-chart-line mr-2"></i>Grafik Absensi Bulanan
                         </h3>
-                        <div class="flex items-center space-x-3">
-                            <select id="chartMonthSelect" class="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <div class="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-3">
+                            <select id="chartMonthSelect" class="px-2 py-1 sm:px-3 border border-gray-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-32 sm:w-auto">
                                 <!-- Month options will be populated dynamically -->
                             </select>
-                            <button onclick="closeAttendanceChartModal()" class="text-gray-400 hover:text-gray-600">
-                                <i class="fas fa-times text-xl"></i>
+                            <button onclick="closeAttendanceChartModal()" class="text-gray-400 hover:text-gray-600 p-1 sm:p-0">
+                                <i class="fas fa-times text-lg sm:text-xl"></i>
                             </button>
                         </div>
                     </div>
                     
                     <div id="attendanceChartContent">
                         <!-- User info and statistics -->
-                        <div id="chartUserInfo" class="mb-6">
+                        <div id="chartUserInfo" class="mb-4 sm:mb-6">
                             <!-- User info will be loaded dynamically -->
                         </div>
                         
                         <!-- Statistics cards -->
-                        <div id="chartStats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+                        <div id="chartStats" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-6">
                             <!-- Stats will be loaded dynamically -->
                         </div>
                         
                         <!-- Chart container -->
-                        <div class="bg-white rounded-lg shadow p-4">
-                            <canvas id="attendanceChart" width="400" height="120"></canvas>
+                        <div class="bg-white rounded-lg shadow p-2 sm:p-4">
+                            <div class="relative" style="height: 300px sm:height-400px lg:height-500px;">
+                                <canvas id="attendanceChart"></canvas>
+                            </div>
                         </div>
                         
                         <!-- Legend -->
-                        <div class="mt-4 flex flex-wrap justify-center gap-4 text-sm">
+                        <div class="mt-3 sm:mt-4 grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-2 sm:gap-4 text-xs sm:text-sm">
                             <div class="flex items-center">
-                                <div class="w-4 h-4 bg-blue-500 rounded mr-2"></div>
-                                <span>Check In</span>
+                                <div class="w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded mr-1 sm:mr-2"></div>
+                                <span class="truncate">Check In</span>
                             </div>
                             <div class="flex items-center">
-                                <div class="w-4 h-4 bg-red-500 rounded mr-2"></div>
-                                <span>Check Out</span>
+                                <div class="w-3 h-3 sm:w-4 sm:h-4 bg-red-500 rounded mr-1 sm:mr-2"></div>
+                                <span class="truncate">Check Out</span>
                             </div>
                             <div class="flex items-center">
-                                <div class="w-0 h-0 border-l-[8px] border-l-gray-400 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent mr-2"></div>
-                                <span>Lupa Check Out</span>
+                                <div class="w-0 h-0 border-l-[6px] sm:border-l-[8px] border-l-gray-400 border-t-[3px] sm:border-t-[4px] border-t-transparent border-b-[3px] sm:border-b-[4px] border-b-transparent mr-1 sm:mr-2"></div>
+                                <span class="truncate">Lupa Check Out</span>
                             </div>
                             <div class="flex items-center">
-                                <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
-                                <span>Standar Check In (08:00)</span>
+                                <div class="w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded mr-1 sm:mr-2"></div>
+                                <span class="truncate">Standar In</span>
                             </div>
                             <div class="flex items-center">
-                                <div class="w-4 h-4 bg-orange-500 rounded mr-2"></div>
-                                <span>Standar Check Out (17:00)</span>
+                                <div class="w-3 h-3 sm:w-4 sm:h-4 bg-orange-500 rounded mr-1 sm:mr-2"></div>
+                                <span class="truncate">Standar Out</span>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="mt-6 flex justify-end">
-                        <button onclick="closeAttendanceChartModal()" class="px-4 py-2 bg-gray-300 text-gray-700 text-base font-medium rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                    <div class="mt-4 sm:mt-6 flex justify-end">
+                        <button onclick="closeAttendanceChartModal()" class="w-full sm:w-auto px-3 sm:px-4 py-2 bg-gray-300 text-gray-700 text-sm sm:text-base font-medium rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500">
                             Tutup
                         </button>
                     </div>
@@ -1182,7 +1184,8 @@
                         backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         tension: 0.1,
                         pointRadius: 4,
-                        pointHoverRadius: 6
+                        pointHoverRadius: 6,
+                        spanGaps: true
                     },
                     {
                         label: 'Check Out',
@@ -1191,7 +1194,8 @@
                         backgroundColor: 'rgba(239, 68, 68, 0.1)',
                         tension: 0.1,
                         pointRadius: 4,
-                        pointHoverRadius: 6
+                        pointHoverRadius: 6,
+                        spanGaps: true
                     },
                     {
                         label: 'Lupa Check Out',
@@ -1230,11 +1234,23 @@
                     intersect: false,
                 },
                 plugins: {
+                    legend: {
+                        display: false // Hide default legend, use custom one
+                    },
                     title: {
                         display: true,
-                        text: `Grafik Waktu Check In/Check Out - ${data.month_name}`
+                        text: `Grafik Waktu Check In/Check Out - ${data.month_name}`,
+                        font: {
+                            size: window.innerWidth < 640 ? 12 : 14
+                        }
                     },
                     tooltip: {
+                        titleFont: {
+                            size: window.innerWidth < 640 ? 11 : 12
+                        },
+                        bodyFont: {
+                            size: window.innerWidth < 640 ? 10 : 12
+                        },
                         callbacks: {
                             label: function(context) {
                                 if (context.parsed.y !== null) {
@@ -1255,18 +1271,34 @@
                     x: {
                         title: {
                             display: true,
-                            text: 'Tanggal'
+                            text: 'Tanggal',
+                            font: {
+                                size: window.innerWidth < 640 ? 10 : 12
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                size: window.innerWidth < 640 ? 9 : 11
+                            },
+                            maxRotation: window.innerWidth < 640 ? 45 : 0,
+                            minRotation: window.innerWidth < 640 ? 45 : 0
                         }
                     },
                     y: {
                         title: {
                             display: true,
-                            text: 'Waktu (24 jam)'
+                            text: 'Waktu (24 jam)',
+                            font: {
+                                size: window.innerWidth < 640 ? 10 : 12
+                            }
                         },
                         min: 6,
                         max: 24,
                         ticks: {
                             stepSize: 1,
+                            font: {
+                                size: window.innerWidth < 640 ? 9 : 11
+                            },
                             callback: function(value) {
                                 if (value === 24) {
                                     return '00:00';
