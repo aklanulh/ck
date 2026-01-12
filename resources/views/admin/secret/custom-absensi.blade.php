@@ -191,6 +191,24 @@
                                     </div>
                                     
                                     <div class="flex items-center">
+                                        <input type="checkbox" id="useCustomDateRange" name="use_custom_date_range" value="1" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                        <label for="useCustomDateRange" class="ml-2 text-sm text-white">
+                                            📅 Gunakan Range Tanggal Custom
+                                        </label>
+                                    </div>
+                                    
+                                    <div id="customDateRangeSettings" class="space-y-3 pl-6" style="display: none;">
+                                        <div>
+                                            <label class="block text-sm font-medium text-white/90">Tanggal Mulai</label>
+                                            <input type="date" name="start_date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-white/90">Tanggal Selesai</label>
+                                            <input type="date" name="end_date" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex items-center">
                                         <input type="checkbox" id="excludeWeekends" name="exclude_weekends" value="1" checked class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                                         <label for="excludeWeekends" class="ml-2 text-sm text-white">
                                             Skip weekend (Sabtu & Minggu)
@@ -604,15 +622,39 @@ document.getElementById('includeIzin').addEventListener('change', function() {
     }
 });
 
-// Initialize izin settings visibility
+// Toggle Custom Date Range Settings visibility
+document.getElementById('useCustomDateRange').addEventListener('change', function() {
+    const customDateRangeSettings = document.getElementById('customDateRangeSettings');
+    const yearMonthInput = document.querySelector('input[name="year_month"]');
+    
+    if (this.checked) {
+        customDateRangeSettings.style.display = 'block';
+        yearMonthInput.required = false;
+        yearMonthInput.disabled = true;
+    } else {
+        customDateRangeSettings.style.display = 'none';
+        yearMonthInput.required = true;
+        yearMonthInput.disabled = false;
+    }
+});
+
+// Initialize settings visibility
 document.addEventListener('DOMContentLoaded', function() {
     const includeIzinCheckbox = document.getElementById('includeIzin');
     const izinSettings = document.getElementById('izinSettings');
+    const useCustomDateRangeCheckbox = document.getElementById('useCustomDateRange');
+    const customDateRangeSettings = document.getElementById('customDateRangeSettings');
     
     if (includeIzinCheckbox.checked) {
         izinSettings.style.display = 'block';
     } else {
         izinSettings.style.display = 'none';
+    }
+    
+    if (useCustomDateRangeCheckbox.checked) {
+        customDateRangeSettings.style.display = 'block';
+    } else {
+        customDateRangeSettings.style.display = 'none';
     }
 });
 </script>

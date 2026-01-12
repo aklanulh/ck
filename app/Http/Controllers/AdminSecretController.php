@@ -242,25 +242,35 @@ class AdminSecretController extends Controller
     {
         $request->validate([
             'user_id' => 'required|exists:users,id',
-            'year_month' => 'required|date_format:Y-m', // Format: 2024-01
+            'year_month' => 'required_without:use_custom_date_range|date_format:Y-m', // Format: 2024-01
+            'start_date' => 'required_if:use_custom_date_range,1|date|before_or_equal:end_date',
+            'end_date' => 'required_if:use_custom_date_range,1|date|after_or_equal:start_date',
             'exclude_weekends' => 'boolean',
-            'force_override' => 'boolean'
+            'force_override' => 'boolean',
+            'use_custom_date_range' => 'boolean'
         ]);
 
         $userId = $request->user_id;
-        $yearMonth = $request->year_month;
         $excludeWeekends = $request->exclude_weekends ?? true;
         $forceOverride = $request->force_override ?? false;
-
-        // Parse year and month
-        [$year, $month] = explode('-', $yearMonth);
+        $useCustomDateRange = $request->use_custom_date_range ?? false;
 
         // Get the user
         $user = User::findOrFail($userId);
 
-        // Get all days in the month
-        $startDate = new \DateTime("$year-$month-01");
-        $endDate = new \DateTime("$year-$month-" . cal_days_in_month(CAL_GREGORIAN, $month, $year));
+        // Determine date range
+        if ($useCustomDateRange) {
+            $startDate = new \DateTime($request->start_date);
+            $endDate = new \DateTime($request->end_date);
+        } else {
+            $yearMonth = $request->year_month;
+            // Parse year and month
+            [$year, $month] = explode('-', $yearMonth);
+
+            // Get all days in the month
+            $startDate = new \DateTime("$year-$month-01");
+            $endDate = new \DateTime("$year-$month-" . cal_days_in_month(CAL_GREGORIAN, $month, $year));
+        }
 
         $created = [];
         $updated = [];
@@ -380,14 +390,26 @@ class AdminSecretController extends Controller
         }
 
         $action = $forceOverride ? 'update/generate' : 'generate';
+
+        // Format date range for message
+        if ($useCustomDateRange) {
+            $dateRange = $startDate->format('d M Y') . ' - ' . $endDate->format('d M Y');
+            $periodText = "periode $dateRange";
+        } else {
+            $periodText = "bulan $yearMonth";
+        }
+
         return response()->json([
             'success' => true,
             'message' => "Berhasil $action " . (count($created) + count($updated)) . " data absensi untuk " .
-                $user->name . " bulan $yearMonth. " .
+                $user->name . " $periodText. " .
                 (count($skipped) > 0 ? count($skipped) . " data dilewati karena sudah ada." : ""),
             'summary' => [
                 'user' => $user->name,
-                'month' => $yearMonth,
+                'period' => $useCustomDateRange ? $dateRange : $yearMonth,
+                'use_custom_date_range' => $useCustomDateRange,
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
                 'total_working_days' => $totalDays,
                 'created' => count($created),
                 'updated' => count($updated),

@@ -516,7 +516,7 @@
                         
                         <!-- Chart container -->
                         <div class="bg-white rounded-lg shadow p-2 sm:p-4">
-                            <div class="relative" style="height: 300px sm:height-400px lg:height-500px;">
+                            <div class="relative" style="height: 500px;">
                                 <canvas id="attendanceChart"></canvas>
                             </div>
                         </div>
@@ -1295,7 +1295,10 @@
                         min: 6,
                         max: 24,
                         ticks: {
+                            autoSkip: false, // Disable auto skipping to show all ticks
                             stepSize: 1,
+                            maxTicksLimit: 19, // Force show all ticks from 6 to 24 (19 ticks total)
+                            sampleSize: 19, // Force all ticks to be sampled
                             font: {
                                 size: window.innerWidth < 640 ? 9 : 11
                             },
