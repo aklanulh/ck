@@ -167,9 +167,9 @@
                     <div class="flex items-center space-x-3">
                         <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse" id="gpsStatusIndicator"></div>
                         <span class="text-sm text-green-600 font-medium" id="gpsStatusText">GPS Aktif</span>
-                        <button onclick="refreshLocation()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center">
+                        <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center">
                             <i class="fas fa-sync-alt mr-1"></i>
-                            <span class="hidden sm:inline">Refresh Lokasi</span>
+                            <span class="hidden sm:inline">Refresh Halaman</span>
                             <span class="sm:hidden">Refresh</span>
                         </button>
                     </div>
@@ -275,8 +275,8 @@
                             <h4 class="text-sm font-medium text-yellow-900">Lokasi Belum Terdeteksi</h4>
                             <p class="text-sm text-yellow-700 mt-1">Lokasi Anda belum terdeteksi. Check in dan check out tidak dapat dilakukan. Harap refresh halaman atau periksa pengaturan GPS Anda.</p>
                             <div class="mt-2">
-                                <button onclick="refreshLocation()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm font-medium transition">
-                                    <i class="fas fa-sync-alt mr-1"></i>Refresh Lokasi
+                                <button onclick="location.reload()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm font-medium transition">
+                                    <i class="fas fa-sync-alt mr-1"></i>Refresh Halaman
                                 </button>
                             </div>
                         </div>

@@ -279,7 +279,7 @@
                                     <video id="cameraVideo" class="w-full" autoplay playsinline></video>
                                     <div class="absolute top-2 right-2 bg-black bg-opacity-75 text-white px-3 py-2 rounded-lg text-base font-medium" id="cameraTimestamp"></div>
                                 </div>
-                                <div class="mt-3 flex space-x-3">
+                                <div class="mt-3 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                                     <button type="button" onclick="capturePhoto()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition">
                                         <i class="fas fa-camera mr-2"></i>Ambil Foto
                                     </button>
@@ -290,9 +290,12 @@
                             </div>
 
                             <!-- Start Camera Button -->
-                            <div id="startCameraSection">
+                            <div id="startCameraSection" class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                                 <button type="button" onclick="startCamera()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition">
                                     <i class="fas fa-video mr-2"></i>Buka Kamera
+                                </button>
+                                <button type="button" onclick="selectFromGallery()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition">
+                                    <i class="fas fa-images mr-2"></i>Ambil dari Galeri
                                 </button>
                             </div>
 
