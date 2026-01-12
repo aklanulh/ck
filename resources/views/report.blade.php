@@ -961,6 +961,83 @@
                 cleanupPhotos();
             }
         });
+
+        // Select photo from gallery
+        function selectFromGallery() {
+            // Create file input
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.style.display = 'none';
+            
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                        showNotification('Harap pilih file gambar', 'error');
+                        return;
+                    }
+                    
+                    // Validate file size (max 5MB)
+                    if (file.size > 5 * 1024 * 1024) {
+                        showNotification('Ukuran file terlalu besar (maks 5MB)', 'error');
+                        return;
+                    }
+                    
+                    // Create form data for upload
+                    const formData = new FormData();
+                    formData.append('photo', file);
+                    formData.append('timestamp', new Date().toLocaleString('id-ID'));
+                    formData.append('lokasi', cameraLocation || 'Lokasi tidak tersedia');
+                    formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+                    
+                    // Show loading state
+                    showNotification('Mengunggah foto...', 'info');
+                    
+                    // Upload photo to server
+                    fetch('{{ route("report.uploadPhoto") }}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            addPhotoToCaptured(data.photo_url, data.timestamp_text);
+                            showNotification('Foto dari galeri berhasil diunggah!', 'success');
+                        } else {
+                            showNotification(data.error || 'Gagal mengunggah foto', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error uploading photo:', error);
+                        showNotification('Terjadi kesalahan saat mengunggah foto', 'error');
+                    });
+                }
+            };
+            
+            // Add to DOM and trigger
+            document.body.appendChild(input);
+            input.click();
+            
+            // Clean up after selection
+            setTimeout(() => {
+                if (input.parentNode) {
+                    input.parentNode.removeChild(input);
+                }
+            }, 1000);
+        }
+
+        // Load draft data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDraftData();
+            
+            // Clear submission flag on page load
+            sessionStorage.removeItem('reportSubmitted');
+        });
     </script>
 </body>
 </html>
