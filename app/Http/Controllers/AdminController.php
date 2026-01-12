@@ -27,14 +27,22 @@ class AdminController extends Controller
         }
 
         // Get statistics
-        $totalUsers = User::count();
+        $totalUsers = User::where('is_hidden', false)->count();
         $totalAbsensi = Absensi::count();
         $totalReports = Report::count();
         $totalVisitSchedules = VisitSchedule::count();
 
         // Get recent activities
-        $recentAbsensi = Absensi::with('user')->latest()->take(5)->get();
-        $recentReports = Report::with('user')->latest()->take(5)->get();
+        $recentAbsensi = Absensi::with('user')
+            ->whereHas('user', function ($query) {
+                $query->where('is_hidden', false);
+            })
+            ->latest()->take(5)->get();
+        $recentReports = Report::with('user')
+            ->whereHas('user', function ($query) {
+                $query->where('is_hidden', false);
+            })
+            ->latest()->take(5)->get();
 
         // Get attendance statistics for today
         $todayAbsensiQuery = Absensi::query();
@@ -64,7 +72,7 @@ class AdminController extends Controller
             return redirect('/absensi')->with('error', 'Anda tidak memiliki akses ke halaman admin.');
         }
 
-        $users = User::latest()->paginate(10);
+        $users = User::where('is_hidden', false)->latest()->paginate(10);
         return view('admin.users', compact('users'));
     }
 
@@ -187,6 +195,9 @@ class AdminController extends Controller
 
         // Get attendance for the specific date
         $absensi = Absensi::with('user')
+            ->whereHas('user', function ($query) {
+                $query->where('is_hidden', false);
+            })
             ->whereDate('created_at', $date)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -260,6 +271,16 @@ class AdminController extends Controller
         if (!$actualTime) return null;
 
         try {
+            // Handle both H:i:s and H:i formats
+            if (strlen($actualTime) === 5) {
+                // Format is H:i, add :00 to make it H:i:s
+                $actualTime .= ':00';
+            }
+            if (strlen($standardTime) === 5) {
+                // Format is H:i, add :00 to make it H:i:s
+                $standardTime .= ':00';
+            }
+
             $actual = \Carbon\Carbon::createFromFormat('H:i:s', $actualTime);
             $standard = \Carbon\Carbon::createFromFormat('H:i:s', $standardTime);
 
@@ -304,6 +325,9 @@ class AdminController extends Controller
 
         // Get reports for the specific date
         $reports = Report::with('user')
+            ->whereHas('user', function ($query) {
+                $query->where('is_hidden', false);
+            })
             ->where('status', '!=', 'draft')
             ->whereDate('tanggal', $date)
             ->orderBy('tanggal', 'desc')
@@ -914,7 +938,11 @@ class AdminController extends Controller
 
                 // Extract times for chart (convert to decimal hours)
                 if ($attendance->check_in) {
-                    $checkInTime = \Carbon\Carbon::createFromFormat('H:i:s', $attendance->check_in);
+                    $checkInTimeStr = $attendance->check_in;
+                    if (strlen($checkInTimeStr) === 5) {
+                        $checkInTimeStr .= ':00';
+                    }
+                    $checkInTime = \Carbon\Carbon::createFromFormat('H:i:s', $checkInTimeStr);
                     $checkInTimes[] = [
                         'x' => $day,
                         'y' => $checkInTime->hour + ($checkInTime->minute / 60)
@@ -922,7 +950,11 @@ class AdminController extends Controller
                 }
 
                 if ($attendance->check_out) {
-                    $checkOutTime = \Carbon\Carbon::createFromFormat('H:i:s', $attendance->check_out);
+                    $checkOutTimeStr = $attendance->check_out;
+                    if (strlen($checkOutTimeStr) === 5) {
+                        $checkOutTimeStr .= ':00';
+                    }
+                    $checkOutTime = \Carbon\Carbon::createFromFormat('H:i:s', $checkOutTimeStr);
                     $checkOutTimes[] = [
                         'x' => $day,
                         'y' => $checkOutTime->hour + ($checkOutTime->minute / 60)

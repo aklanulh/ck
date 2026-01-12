@@ -54,8 +54,19 @@ class Absensi extends Model
     public function calculateTotalHours()
     {
         if ($this->check_in && $this->check_out) {
-            $checkIn = Carbon::createFromFormat('H:i:s', $this->check_in);
-            $checkOut = Carbon::createFromFormat('H:i:s', $this->check_out);
+            // Handle both H:i:s and H:i formats
+            $checkInTime = $this->check_in;
+            $checkOutTime = $this->check_out;
+
+            if (strlen($checkInTime) === 5) {
+                $checkInTime .= ':00';
+            }
+            if (strlen($checkOutTime) === 5) {
+                $checkOutTime .= ':00';
+            }
+
+            $checkIn = Carbon::createFromFormat('H:i:s', $checkInTime);
+            $checkOut = Carbon::createFromFormat('H:i:s', $checkOutTime);
 
             // Convert to minutes for easier calculation
             $checkInMinutes = $checkIn->hour * 60 + $checkIn->minute + ($checkIn->second / 60);

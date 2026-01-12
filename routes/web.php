@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminSecretController;
 
 // Guest routes (unauthenticated users)
 Route::middleware('guest')->group(function () {
@@ -86,6 +87,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/visit-schedules/calendar', [AdminController::class, 'getVisitSchedulesCalendar'])->name('admin.visit-schedules.calendar');
         Route::get('/admin/settings', [AdminController::class, 'settings'])->name('admin.settings');
         Route::post('/admin/clear-cache', [AdminController::class, 'clearCache'])->name('admin.clear-cache');
+
+        // Secret admin routes
+        Route::get('/admin/secret', [AdminSecretController::class, 'dashboard'])->name('admin.secret.dashboard');
+        Route::get('/admin/secret/kelola-pengguna', [AdminSecretController::class, 'kelolaPengguna'])->name('admin.secret.kelola-pengguna');
+        Route::post('/admin/secret/toggle-user/{userId}', [AdminSecretController::class, 'toggleUserVisibility'])->name('admin.secret.toggle-user');
+        Route::get('/admin/secret/custom-absensi', [AdminSecretController::class, 'customAbsensi'])->name('admin.secret.custom-absensi');
+        Route::post('/admin/secret/custom-absensi', [AdminSecretController::class, 'createCustomAbsensi'])->name('admin.secret.create-absensi');
+        Route::put('/admin/secret/custom-absensi/{id}', [AdminSecretController::class, 'updateAbsensi'])->name('admin.secret.update-absensi');
+        Route::get('/admin/secret/custom-absensi/{id}/edit-data', [AdminSecretController::class, 'getAbsensiData'])->name('admin.secret.get-absensi-data');
+        Route::delete('/admin/secret/custom-absensi/{id}', [AdminSecretController::class, 'deleteAbsensi'])->name('admin.secret.delete-absensi');
+        Route::post('/admin/secret/bulk-absensi', [AdminSecretController::class, 'bulkCreateAbsensi'])->name('admin.secret.bulk-absensi');
+        Route::post('/admin/secret/generate-monthly', [AdminSecretController::class, 'generateMonthlyAttendance'])->name('admin.secret.generate-monthly');
     });
 });
 
