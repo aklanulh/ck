@@ -530,6 +530,10 @@
                                 <span>Check Out</span>
                             </div>
                             <div class="flex items-center">
+                                <div class="w-0 h-0 border-l-[8px] border-l-gray-400 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent mr-2"></div>
+                                <span>Lupa Check Out</span>
+                            </div>
+                            <div class="flex items-center">
                                 <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
                                 <span>Standar Check In (08:00)</span>
                             </div>
@@ -1147,6 +1151,7 @@
         // Prepare datasets
         const checkInData = new Array(31).fill(null);
         const checkOutData = new Array(31).fill(null);
+        const missingCheckOutData = new Array(31).fill(null);
         
         data.check_in_times.forEach(point => {
             checkInData[parseInt(point.x) - 1] = point.y;
@@ -1155,6 +1160,14 @@
         data.check_out_times.forEach(point => {
             checkOutData[parseInt(point.x) - 1] = point.y;
         });
+        
+        // Identify missing check-outs (check-in exists but no check-out)
+        for (let i = 0; i < 31; i++) {
+            if (checkInData[i] !== null && checkOutData[i] === null) {
+                // Mark as missing check-out with a special value
+                missingCheckOutData[i] = 17; // Show at standard check-out time
+            }
+        }
         
         // Create new chart
         attendanceChart = new Chart(ctx, {
@@ -1179,6 +1192,17 @@
                         tension: 0.1,
                         pointRadius: 4,
                         pointHoverRadius: 6
+                    },
+                    {
+                        label: 'Lupa Check Out',
+                        data: missingCheckOutData,
+                        borderColor: 'rgb(156, 163, 175)',
+                        backgroundColor: 'rgba(156, 163, 175, 0.1)',
+                        borderDash: [5, 5],
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointStyle: 'triangle',
+                        showLine: false
                     },
                     {
                         label: 'Standar Check In (08:00)',
@@ -1214,6 +1238,9 @@
                         callbacks: {
                             label: function(context) {
                                 if (context.parsed.y !== null) {
+                                    if (context.dataset.label === 'Lupa Check Out') {
+                                        return '⚠️ Lupa Check Out (seharusnya 17:00)';
+                                    }
                                     const hours = Math.floor(context.parsed.y);
                                     const minutes = Math.round((context.parsed.y - hours) * 60);
                                     const time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
@@ -1237,10 +1264,13 @@
                             text: 'Waktu (24 jam)'
                         },
                         min: 6,
-                        max: 19,
+                        max: 24,
                         ticks: {
                             stepSize: 1,
                             callback: function(value) {
+                                if (value === 24) {
+                                    return '00:00';
+                                }
                                 return value + ':00';
                             }
                         }
