@@ -240,15 +240,21 @@ class AdminSecretController extends Controller
      */
     public function generateMonthlyAttendance(Request $request)
     {
-        $request->validate([
+        $rules = [
             'user_id' => 'required|exists:users,id',
             'year_month' => 'required_without:use_custom_date_range|date_format:Y-m', // Format: 2024-01
-            'start_date' => 'required_if:use_custom_date_range,1|date|before_or_equal:end_date',
-            'end_date' => 'required_if:use_custom_date_range,1|date|after_or_equal:start_date',
             'exclude_weekends' => 'boolean',
             'force_override' => 'boolean',
             'use_custom_date_range' => 'boolean'
-        ]);
+        ];
+
+        // Add date validation rules only if custom date range is enabled
+        if ($request->use_custom_date_range) {
+            $rules['start_date'] = 'required|date|before_or_equal:end_date';
+            $rules['end_date'] = 'required|date|after_or_equal:start_date';
+        }
+
+        $request->validate($rules);
 
         $userId = $request->user_id;
         $excludeWeekends = $request->exclude_weekends ?? true;

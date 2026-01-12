@@ -483,6 +483,18 @@ document.getElementById('monthlyGeneratorForm').addEventListener('submit', funct
     
     const formData = new FormData(this);
     
+    // Ensure checkbox values are properly sent
+    const useCustomDateRange = document.getElementById('useCustomDateRange').checked;
+    const includeIzin = document.getElementById('includeIzin').checked;
+    const excludeWeekends = document.getElementById('excludeWeekends').checked;
+    const forceOverride = document.getElementById('forceOverride').checked;
+    
+    // Set checkbox values explicitly
+    formData.set('use_custom_date_range', useCustomDateRange ? '1' : '0');
+    formData.set('include_izin', includeIzin ? '1' : '0');
+    formData.set('exclude_weekends', excludeWeekends ? '1' : '0');
+    formData.set('force_override', forceOverride ? '1' : '0');
+    
     // Show loading
     const submitBtn = this.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
@@ -504,7 +516,7 @@ document.getElementById('monthlyGeneratorForm').addEventListener('submit', funct
             let message = data.message + '\n\n';
             message += '📊 Summary:\n';
             message += `👤 User: ${data.summary.user}\n`;
-            message += `📅 Month: ${data.summary.month}\n`;
+            message += `📅 Period: ${data.summary.period}\n`;
             message += `📆 Working Days: ${data.summary.total_working_days}\n`;
             message += `✅ Created: ${data.summary.created}\n`;
             message += `🔄 Updated: ${data.summary.updated || 0}\n`;
