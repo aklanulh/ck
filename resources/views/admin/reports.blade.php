@@ -69,6 +69,51 @@
     </div>
 </div>
 
+<!-- Export Excel Section -->
+<div class="mb-6 bg-white rounded-lg shadow p-4">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-medium text-gray-900">Export Laporan</h3>
+        <button onclick="toggleExportFilters()" class="text-purple-600 hover:text-purple-800 font-medium text-sm">
+            <i class="fas fa-filter mr-2"></i>Filter & Export
+        </button>
+    </div>
+    
+    <div id="exportFilters" class="hidden">
+        <form id="exportForm" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label for="exportUser" class="block text-sm font-medium text-gray-700 mb-2">User</label>
+                    <select id="exportUser" name="user_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="">Semua User</option>
+                        @foreach($users as $user)
+                            <option value="{{ $user->id }}">{{ $user->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="exportStartDate" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Mulai</label>
+                    <input type="date" id="exportStartDate" name="start_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                
+                <div>
+                    <label for="exportEndDate" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Selesai</label>
+                    <input type="date" id="exportEndDate" name="end_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                </div>
+                
+                <div class="flex items-end space-x-2">
+                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+                        <i class="fas fa-file-excel mr-2"></i>Export Excel
+                    </button>
+                    <button type="button" onclick="resetExportFilters()" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
+                        <i class="fas fa-undo mr-2"></i>Reset
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Reports Table -->
 <div class="bg-white shadow rounded-lg overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200">
@@ -610,6 +655,53 @@ document.getElementById('deleteModal').addEventListener('click', function(e) {
     if (e.target === this) {
         closeDeleteModal();
     }
+});
+
+// Export Functions
+function toggleExportFilters() {
+    const filters = document.getElementById('exportFilters');
+    filters.classList.toggle('hidden');
+}
+
+function resetExportFilters() {
+    document.getElementById('exportUser').value = '';
+    document.getElementById('exportStartDate').value = '';
+    document.getElementById('exportEndDate').value = '';
+}
+
+// Export form submission
+document.getElementById('exportForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const params = new URLSearchParams();
+    
+    // Build query parameters
+    if (formData.get('user_id')) {
+        params.append('user_id', formData.get('user_id'));
+    }
+    if (formData.get('start_date')) {
+        params.append('start_date', formData.get('start_date'));
+    }
+    if (formData.get('end_date')) {
+        params.append('end_date', formData.get('end_date'));
+    }
+    
+    // Show loading state
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Exporting...';
+    submitBtn.disabled = true;
+    
+    // Download Excel file
+    const downloadUrl = '/admin/export-reports-excel?' + params.toString();
+    window.open(downloadUrl, '_blank');
+    
+    // Reset button state
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 2000);
 });
 </script>
 @endsection

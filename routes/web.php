@@ -79,6 +79,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/api/admin/attendance-weekly', [AdminController::class, 'getAttendanceWeekly']);
         Route::get('/api/admin/attendance-detail', [AdminController::class, 'getAttendanceDetail']);
         Route::get('/api/admin/user-attendance-chart', [AdminController::class, 'getUserAttendanceChart']);
+        Route::get('/api/admin/get-all-users', [AdminController::class, 'getAllUsers']);
+        Route::get('/admin/export-absensi-excel', [AdminController::class, 'exportAbsensiExcel'])->name('admin.absensi.export.excel');
+        Route::get('/admin/export-reports-excel', [AdminController::class, 'exportReportsExcel'])->name('admin.reports.export.excel');
 
         Route::get('/admin/reports', [AdminController::class, 'reports'])->name('admin.reports');
         Route::get('/admin/reports/{id}', [AdminController::class, 'showReport'])->name('admin.reports.show');

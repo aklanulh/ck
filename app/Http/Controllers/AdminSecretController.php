@@ -394,7 +394,8 @@ class AdminSecretController extends Controller
     public function generateMonthlyAttendance(Request $request)
     {
         $rules = [
-            'user_id' => 'required|exists:users,id',
+            'user_ids' => 'required|array|min:1',
+            'user_ids.*' => 'required|exists:users,id',
             'year_month' => 'required_without:use_custom_date_range|date_format:Y-m', // Format: 2024-01
             'exclude_weekends' => 'boolean',
             'force_override' => 'boolean',
@@ -412,7 +413,7 @@ class AdminSecretController extends Controller
 
         $request->validate($rules);
 
-        $userId = $request->user_id;
+        $userIds = $request->user_ids;
         $excludeWeekends = $request->exclude_weekends ?? true;
         $forceOverride = $request->force_override ?? false;
         $useCustomDateRange = $request->use_custom_date_range ?? false;
@@ -420,8 +421,8 @@ class AdminSecretController extends Controller
         $izinPercentage = $request->izin_percentage ?? 10;
         $izinReason = $request->izin_reason ?? 'random';
 
-        // Get the user
-        $user = User::findOrFail($userId);
+        // Get the users
+        $users = User::whereIn('id', $userIds)->get();
 
         // Determine date range
         if ($useCustomDateRange) {
@@ -441,6 +442,7 @@ class AdminSecretController extends Controller
         $updated = [];
         $skipped = [];
         $totalDays = 0;
+        $totalUsersProcessed = 0;
 
         // Helper function to generate random status
         $generateRandomStatus = function () use ($includeIzin, $izinPercentage, $izinReason) {
@@ -476,24 +478,77 @@ class AdminSecretController extends Controller
             }
         };
 
-        foreach (new \DatePeriod($startDate, new \DateInterval('P1D'), $endDate->modify('+1 day')) as $date) {
-            $currentDate = $date->format('Y-m-d');
+        // Process each user
+        foreach ($users as $user) {
+            $totalUsersProcessed++;
+            $userCreated = [];
+            $userUpdated = [];
+            $userSkipped = [];
 
-            // Skip weekends if enabled
-            if ($excludeWeekends && in_array($date->format('N'), [6, 7])) { // 6=Saturday, 7=Sunday
-                continue;
-            }
+            foreach (new \DatePeriod($startDate, new \DateInterval('P1D'), $endDate->modify('+1 day')) as $date) {
+                $currentDate = $date->format('Y-m-d');
 
-            $totalDays++;
+                // Skip weekends if enabled
+                if ($excludeWeekends && in_array($date->format('N'), [6, 7])) { // 6=Saturday, 7=Sunday
+                    continue;
+                }
 
-            // Check if absensi already exists
-            $existing = Absensi::where('user_id', $userId)
-                ->whereDate('tanggal', $currentDate)
-                ->first();
+                $totalDays++;
 
-            if ($existing) {
-                if ($forceOverride) {
-                    // Update existing record
+                // Check if absensi already exists for this user
+                $existing = Absensi::where('user_id', $user->id)
+                    ->whereDate('tanggal', $currentDate)
+                    ->first();
+
+                if ($existing) {
+                    if ($forceOverride) {
+                        // Update existing record
+                        // Random check-in time between 07:30:00-07:55:59
+                        $checkInHour = 7;
+                        $checkInMinute = rand(30, 55);
+                        $checkInSecond = rand(0, 59);
+                        $jamMasuk = sprintf("%02d:%02d:%02d", $checkInHour, $checkInMinute, $checkInSecond);
+
+                        // Random check-out time between 17:00:00-18:00:59
+                        $checkOutHour = rand(17, 18);
+                        if ($checkOutHour == 17) {
+                            $checkOutMinute = rand(0, 59);
+                            $checkOutSecond = rand(0, 59);
+                        } else {
+                            $checkOutMinute = 0;
+                            $checkOutSecond = 0;
+                        }
+                        $jamKeluar = sprintf("%02d:%02d:%02d", $checkOutHour, $checkOutMinute, $checkOutSecond);
+
+                        // Generate status using helper function
+                        $statusData = $generateRandomStatus();
+
+                        // Disable timestamps temporarily
+                        $existing->timestamps = false;
+
+                        $existing->update([
+                            'check_in' => $jamMasuk,
+                            'check_out' => $jamKeluar,
+                            'check_in_location' => 'Kota Wisata, Limusnunggal, Cileungsi, Bogor, Jawa Barat, Jawa, 16829, Indonesia',
+                            'check_out_location' => 'Kota Wisata, Limusnunggal, Cileungsi, Bogor, Jawa Barat, Jawa, 16829, Indonesia',
+                            'keterangan' => $statusData['keterangan'],
+                            'status' => $statusData['status'],
+                            'updated_by_admin' => true,
+                            'admin_id' => Auth::id(),
+                            'created_at' => $currentDate . ' ' . $jamKeluar,
+                            'updated_at' => $currentDate . ' ' . $jamKeluar
+                        ]);
+
+                        // Re-enable timestamps
+                        $existing->timestamps = true;
+
+                        $userUpdated[] = $existing;
+                    } else {
+                        $skipped[] = $currentDate;
+                        continue;
+                    }
+                } else {
+                    // Create new record
                     // Random check-in time between 07:30:00-07:55:59
                     $checkInHour = 7;
                     $checkInMinute = rand(30, 55);
@@ -514,79 +569,37 @@ class AdminSecretController extends Controller
                     // Generate status using helper function
                     $statusData = $generateRandomStatus();
 
-                    // Disable timestamps temporarily
-                    $existing->timestamps = false;
-
-                    $existing->update([
+                    $absensiData = [
+                        'user_id' => $user->id,
+                        'tanggal' => $currentDate,
                         'check_in' => $jamMasuk,
                         'check_out' => $jamKeluar,
                         'check_in_location' => 'Kota Wisata, Limusnunggal, Cileungsi, Bogor, Jawa Barat, Jawa, 16829, Indonesia',
                         'check_out_location' => 'Kota Wisata, Limusnunggal, Cileungsi, Bogor, Jawa Barat, Jawa, 16829, Indonesia',
                         'keterangan' => $statusData['keterangan'],
                         'status' => $statusData['status'],
-                        'updated_by_admin' => true,
+                        'created_by_admin' => true,
                         'admin_id' => Auth::id(),
                         'created_at' => $currentDate . ' ' . $jamKeluar,
                         'updated_at' => $currentDate . ' ' . $jamKeluar
-                    ]);
+                    ];
 
-                    // Re-enable timestamps
-                    $existing->timestamps = true;
+                    $absensi = Absensi::insert($absensiData);
 
-                    $updated[] = $existing;
-                } else {
-                    $skipped[] = $currentDate;
-                    continue;
+                    // Get the inserted record for response
+                    $absensi = Absensi::where('user_id', $user->id)
+                        ->where('tanggal', $currentDate)
+                        ->first();
+
+                    $userCreated[] = $absensi;
                 }
-            } else {
-                // Create new record
-                // Random check-in time between 07:30:00-07:55:59
-                $checkInHour = 7;
-                $checkInMinute = rand(30, 55);
-                $checkInSecond = rand(0, 59);
-                $jamMasuk = sprintf("%02d:%02d:%02d", $checkInHour, $checkInMinute, $checkInSecond);
-
-                // Random check-out time between 17:00:00-18:00:59
-                $checkOutHour = rand(17, 18);
-                if ($checkOutHour == 17) {
-                    $checkOutMinute = rand(0, 59);
-                    $checkOutSecond = rand(0, 59);
-                } else {
-                    $checkOutMinute = 0;
-                    $checkOutSecond = 0;
-                }
-                $jamKeluar = sprintf("%02d:%02d:%02d", $checkOutHour, $checkOutMinute, $checkOutSecond);
-
-                // Generate status using helper function
-                $statusData = $generateRandomStatus();
-
-                $absensiData = [
-                    'user_id' => $userId,
-                    'tanggal' => $currentDate,
-                    'check_in' => $jamMasuk,
-                    'check_out' => $jamKeluar,
-                    'check_in_location' => 'Kota Wisata, Limusnunggal, Cileungsi, Bogor, Jawa Barat, Jawa, 16829, Indonesia',
-                    'check_out_location' => 'Kota Wisata, Limusnunggal, Cileungsi, Bogor, Jawa Barat, Jawa, 16829, Indonesia',
-                    'keterangan' => $statusData['keterangan'],
-                    'status' => $statusData['status'],
-                    'created_by_admin' => true,
-                    'admin_id' => Auth::id(),
-                    'created_at' => $currentDate . ' ' . $jamKeluar,
-                    'updated_at' => $currentDate . ' ' . $jamKeluar
-                ];
-
-                $absensi = Absensi::insert($absensiData);
-
-                // Get the inserted record for response
-                $absensi = Absensi::where('user_id', $userId)
-                    ->where('tanggal', $currentDate)
-                    ->first();
-
-                $created[] = $absensi;
             }
-        }
 
-        $action = $forceOverride ? 'update/generate' : 'generate';
+            // Merge user results into main results
+            $created = array_merge($created, $userCreated);
+            $updated = array_merge($updated, $userUpdated);
+            $skipped = array_merge($skipped, $userSkipped);
+        }
 
         // Format date range for message
         if ($useCustomDateRange) {
@@ -596,23 +609,28 @@ class AdminSecretController extends Controller
             $periodText = "bulan $yearMonth";
         }
 
+        $action = $forceOverride ? 'update/generate' : 'generate';
+
         return response()->json([
             'success' => true,
             'message' => "Berhasil $action " . (count($created) + count($updated)) . " data absensi untuk " .
-                $user->name . " $periodText. " .
+                $totalUsersProcessed . " pengguna $periodText. " .
                 (count($skipped) > 0 ? count($skipped) . " data dilewati karena sudah ada." : ""),
             'summary' => [
-                'user' => $user->name,
+                'total_users_processed' => $totalUsersProcessed,
                 'period' => $useCustomDateRange ? $dateRange : $yearMonth,
                 'use_custom_date_range' => $useCustomDateRange,
                 'start_date' => $startDate->format('Y-m-d'),
                 'end_date' => $endDate->format('Y-m-d'),
-                'total_working_days' => $totalDays,
-                'created' => count($created),
-                'updated' => count($updated),
-                'skipped' => count($skipped),
+                'total_working_days' => $totalDays / $totalUsersProcessed,
+                'total_created' => count($created),
+                'total_updated' => count($updated),
+                'total_skipped' => count($skipped),
                 'force_override' => $forceOverride,
-                'exclude_weekends' => $excludeWeekends
+                'exclude_weekends' => $excludeWeekends,
+                'include_izin' => $includeIzin,
+                'izin_percentage' => $izinPercentage,
+                'izin_reason' => $izinReason
             ],
             'created' => $created,
             'updated' => $updated,

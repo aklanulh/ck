@@ -71,6 +71,76 @@
             </div>
         </div>
 
+        <!-- Export Excel Section -->
+        <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Export Excel</h3>
+                        <p class="text-sm text-gray-500 mt-1">Export data absensi ke Excel dengan filter yang sesuai kebutuhan</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="toggleExportFilters()" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                            <i class="fas fa-filter mr-2"></i>Filter & Export
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Export Filters (Hidden by default) -->
+                <div id="exportFilters" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
+                    <form id="exportForm" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- User Filter -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Filter User</label>
+                                <select id="exportUser" name="user_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <option value="">Semua User</option>
+                                    @foreach($users ?? [] as $user)
+                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            <!-- Date Range Filter -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Mulai</label>
+                                <input type="date" id="exportStartDate" name="start_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Selesai</label>
+                                <input type="date" id="exportEndDate" name="end_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            </div>
+                            
+                            <!-- Status Filter -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Filter Status</label>
+                                <select id="exportStatus" name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <option value="">Semua Status</option>
+                                    <option value="hadir">Hadir</option>
+                                    <option value="terlambat">Terlambat</option>
+                                    <option value="izin">Izin</option>
+                                    <option value="sakit">Sakit</option>
+                                    <option value="cuti">Cuti</option>
+                                    <option value="alfa">Alfa</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Export Actions -->
+                        <div class="flex flex-col sm:flex-row gap-3 mt-4">
+                            <button type="button" onclick="resetExportFilters()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors">
+                                <i class="fas fa-redo mr-2"></i>Reset Filter
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                                <i class="fas fa-file-excel mr-2"></i>Export Excel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- Absensi Table -->
         <div class="bg-white shadow rounded-lg overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -497,6 +567,14 @@
                             <select id="chartMonthSelect" class="px-2 py-1 sm:px-3 border border-gray-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-32 sm:w-auto">
                                 <!-- Month options will be populated dynamically -->
                             </select>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="navigateUser('prev')" id="prevUserBtn" class="text-gray-400 hover:text-gray-600 p-1 sm:p-0 disabled" disabled>
+                                    <i class="fas fa-chevron-left text-lg sm:text-xl"></i>
+                                </button>
+                                <button onclick="navigateUser('next')" id="nextUserBtn" class="text-gray-400 hover:text-gray-600 p-1 sm:p-0 disabled" disabled>
+                                    <i class="fas fa-chevron-right text-lg sm:text-xl"></i>
+                                </button>
+                            </div>
                             <button onclick="closeAttendanceChartModal()" class="text-gray-400 hover:text-gray-600 p-1 sm:p-0">
                                 <i class="fas fa-times text-lg sm:text-xl"></i>
                             </button>
@@ -591,6 +669,57 @@
     function refreshAbsensi() {
         window.location.reload();
     }
+
+    // Export Excel Functions
+    function toggleExportFilters() {
+        const filters = document.getElementById('exportFilters');
+        filters.classList.toggle('hidden');
+    }
+
+    function resetExportFilters() {
+        document.getElementById('exportUser').value = '';
+        document.getElementById('exportStartDate').value = '';
+        document.getElementById('exportEndDate').value = '';
+        document.getElementById('exportStatus').value = '';
+    }
+
+    // Export form submission
+    document.getElementById('exportForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const params = new URLSearchParams();
+        
+        // Build query parameters
+        if (formData.get('user_id')) {
+            params.append('user_id', formData.get('user_id'));
+        }
+        if (formData.get('start_date')) {
+            params.append('start_date', formData.get('start_date'));
+        }
+        if (formData.get('end_date')) {
+            params.append('end_date', formData.get('end_date'));
+        }
+        if (formData.get('status')) {
+            params.append('status', formData.get('status'));
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Exporting...';
+        submitBtn.disabled = true;
+        
+        // Download Excel file
+        const downloadUrl = '/admin/export-absensi-excel?' + params.toString();
+        window.open(downloadUrl, '_blank');
+        
+        // Reset button state
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 2000);
+    });
 
     // Izin management functions
     function filterIzin() {
@@ -995,11 +1124,16 @@
     // Attendance Chart Modal Functions
     let attendanceChart = null;
     let currentUserId = null;
+    let allUsers = [];
+    let currentUserIndex = -1;
 
     async function showAttendanceChart(userId) {
         currentUserId = userId;
         
         try {
+            // Load all users first
+            await loadAllUsers();
+            
             // Populate month selector
             populateMonthSelector();
             

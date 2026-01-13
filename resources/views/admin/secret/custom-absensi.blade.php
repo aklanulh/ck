@@ -177,12 +177,26 @@
                                 <div class="space-y-4">
                                     <div>
                                         <label class="block text-sm font-medium text-white">Pilih Pengguna</label>
-                                        <select name="user_id" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md text-gray-900">
-                                            <option value="">Pilih Pengguna</option>
+                                        <div class="mt-2 space-y-2 max-h-40 overflow-y-auto bg-white/5 backdrop-blur-sm rounded-lg p-3">
+                                            <div class="flex items-center">
+                                                <input type="checkbox" id="selectAllUsers" onchange="toggleAllUsers()" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                <label for="selectAllUsers" class="ml-2 text-sm text-white font-medium">
+                                                    📋 Pilih Semua Pengguna
+                                                </label>
+                                            </div>
+                                            <hr class="border-white/20">
                                             @foreach($users as $user)
-                                                <option value="{{ $user->id }}">{{ $user->name }} ({{ $user->email }})</option>
+                                                <div class="flex items-center">
+                                                    <input type="checkbox" name="user_ids[]" value="{{ $user->id }}" class="user-checkbox rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                    <label class="ml-2 text-sm text-white">
+                                                        {{ $user->name }} ({{ $user->email }})
+                                                    </label>
+                                                </div>
                                             @endforeach
-                                        </select>
+                                        </div>
+                                        <div id="selectedUsersCount" class="mt-1 text-xs text-white/70">
+                                            0 pengguna dipilih
+                                        </div>
                                     </div>
                                     
                                     <div>
@@ -591,17 +605,22 @@ document.getElementById('monthlyGeneratorForm').addEventListener('submit', funct
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Show detailed summary
+            // Show detailed summary for multiple users
             let message = data.message + '\n\n';
             message += '📊 Summary:\n';
-            message += `👤 User: ${data.summary.user}\n`;
+            message += `👥 Total Users: ${data.summary.total_users_processed}\n`;
             message += `📅 Period: ${data.summary.period}\n`;
-            message += `📆 Working Days: ${data.summary.total_working_days}\n`;
-            message += `✅ Created: ${data.summary.created}\n`;
-            message += `🔄 Updated: ${data.summary.updated || 0}\n`;
-            message += `⏭️ Skipped: ${data.summary.skipped}\n`;
+            message += `📆 Working Days per User: ${data.summary.total_working_days}\n`;
+            message += `✅ Total Created: ${data.summary.total_created}\n`;
+            message += `🔄 Total Updated: ${data.summary.total_updated || 0}\n`;
+            message += `⏭️ Total Skipped: ${data.summary.total_skipped}\n`;
             message += `🗓️ Weekends Excluded: ${data.summary.exclude_weekends ? 'Yes' : 'No'}\n`;
-            message += `🔥 Force Override: ${data.summary.force_override ? 'Yes' : 'No'}`;
+            message += `🔥 Force Override: ${data.summary.force_override ? 'Yes' : 'No'}\n`;
+            message += `📄 Izin Enabled: ${data.summary.include_izin ? 'Yes' : 'No'}\n`;
+            if (data.summary.include_izin) {
+                message += `📊 Izin Percentage: ${data.summary.izin_percentage}%\n`;
+                message += `🎲 Izin Reason: ${data.summary.izin_reason}\n`;
+            }
             
             alert(message);
             this.reset();
@@ -747,6 +766,49 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         customDateRangeSettings.style.display = 'none';
     }
+    
+    // Initialize user checkboxes
+    updateUserSelectionCount();
+});
+
+// Multi-select user functions
+function toggleAllUsers() {
+    const selectAll = document.getElementById('selectAllUsers');
+    const userCheckboxes = document.querySelectorAll('.user-checkbox');
+    
+    userCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+    
+    updateUserSelectionCount();
+}
+
+function updateUserSelectionCount() {
+    const userCheckboxes = document.querySelectorAll('.user-checkbox:checked');
+    const count = userCheckboxes.length;
+    const countDisplay = document.getElementById('selectedUsersCount');
+    
+    countDisplay.textContent = `${count} pengguna dipilih`;
+    
+    // Update select all checkbox state
+    const selectAll = document.getElementById('selectAllUsers');
+    const allCheckboxes = document.querySelectorAll('.user-checkbox');
+    
+    if (count === 0) {
+        selectAll.checked = false;
+        selectAll.indeterminate = false;
+    } else if (count === allCheckboxes.length) {
+        selectAll.checked = true;
+        selectAll.indeterminate = false;
+    } else {
+        selectAll.checked = false;
+        selectAll.indeterminate = true;
+    }
+}
+
+// Add event listeners to user checkboxes
+document.querySelectorAll('.user-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', updateUserSelectionCount);
 });
 
 // Filter and Sort Functions

@@ -1006,7 +1006,10 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            addPhotoToCaptured(data.photo_url, data.timestamp_text);
+                            // Add to captured photos
+                            capturedPhotos.push(data.photo);
+                            displayCapturedPhotos();
+                            updatePhotoEvidenceInput();
                             showNotification('Foto dari galeri berhasil diunggah!', 'success');
                         } else {
                             showNotification(data.error || 'Gagal mengunggah foto', 'error');

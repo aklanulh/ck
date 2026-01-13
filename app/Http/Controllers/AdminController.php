@@ -193,6 +193,11 @@ class AdminController extends Controller
         $date = $request->get('date', now()->format('Y-m-d'));
         $dateObj = \Carbon\Carbon::createFromFormat('Y-m-d', $date);
 
+        // Get all users for export filter
+        $users = User::where('is_hidden', false)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
         // Get attendance for the specific date
         $absensi = Absensi::with('user')
             ->whereHas('user', function ($query) {
@@ -220,7 +225,7 @@ class AdminController extends Controller
         $previousDate = $dateObj->copy()->subDay()->format('Y-m-d');
         $nextDate = $dateObj->copy()->addDay()->format('Y-m-d');
 
-        return view('admin.absensi', compact('absensi', 'izin', 'date', 'previousDate', 'nextDate', 'dateObj'));
+        return view('admin.absensi', compact('absensi', 'izin', 'date', 'previousDate', 'nextDate', 'dateObj', 'users'));
     }
 
     /**
@@ -323,6 +328,11 @@ class AdminController extends Controller
         $date = $request->get('date', now()->format('Y-m-d'));
         $dateObj = \Carbon\Carbon::createFromFormat('Y-m-d', $date);
 
+        // Get all users for export filter
+        $users = User::where('is_hidden', false)
+            ->orderBy('name')
+            ->get(['id', 'name', 'email']);
+
         // Get reports for the specific date
         $reports = Report::with('user')
             ->whereHas('user', function ($query) {
@@ -337,7 +347,7 @@ class AdminController extends Controller
         $previousDate = $dateObj->copy()->subDay()->format('Y-m-d');
         $nextDate = $dateObj->copy()->addDay()->format('Y-m-d');
 
-        return view('admin.reports', compact('reports', 'date', 'previousDate', 'nextDate', 'dateObj'));
+        return view('admin.reports', compact('reports', 'date', 'previousDate', 'nextDate', 'dateObj', 'users'));
     }
 
     /**
@@ -1000,5 +1010,252 @@ class AdminController extends Controller
                 'error' => 'Failed to load attendance chart data: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Export attendance data to Excel (CSV format)
+     */
+    public function exportAbsensiExcel(Request $request)
+    {
+        if (session('user')['role'] !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Start building the query
+        $query = Absensi::with('user')
+            ->whereHas('user', function ($query) {
+                $query->where('is_hidden', false);
+            });
+
+        // Apply filters
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Get the data
+        $attendances = $query->orderBy('created_at', 'desc')->get();
+
+        // Generate dynamic filename
+        if ($request->filled('user_id')) {
+            $user = User::find($request->user_id);
+            $userName = $user ? str_replace(' ', '_', $user->name) : 'Unknown_User';
+            $filename = 'laporan_absensi_' . $userName . '_' . date('Y-m-d_H-i-s') . '.csv';
+        } else {
+            $filename = 'laporan_absensi_semua_user_' . date('Y-m-d_H-i-s') . '.csv';
+        }
+
+        // Create CSV content with professional report format
+        $csvContent = "\xEF\xBB\xBF"; // UTF-8 BOM
+
+        // Add report header
+        $reportTitle = "LAPORAN ABSENSI KARYAWAN";
+        if ($request->filled('user_id')) {
+            $user = User::find($request->user_id);
+            if ($user) {
+                $reportTitle = "LAPORAN ABSENSI - " . strtoupper($user->name);
+            }
+        }
+        $periodText = "";
+
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $periodText = "Periode: " . date('d/m/Y', strtotime($request->start_date)) . " - " . date('d/m/Y', strtotime($request->end_date));
+        } elseif ($request->filled('start_date')) {
+            $periodText = "Tanggal: " . date('d/m/Y', strtotime($request->start_date));
+        } else {
+            $periodText = "Tanggal: " . date('d/m/Y');
+        }
+
+        $generatedAt = "Dicetak pada: " . date('d/m/Y H:i:s');
+
+        // Add title and period information
+        $csvContent .= $reportTitle . "\n";
+        $csvContent .= $periodText . "\n";
+        $csvContent .= $generatedAt . "\n";
+        $csvContent .= "\n"; // Empty line before headers
+
+        // Add headers with semicolon delimiter
+        $headers = ['ID', 'Nama User', 'Email User', 'Tanggal', 'Check In', 'Check Out', 'Lokasi Check In', 'Lokasi Check Out', 'Total Jam Kerja', 'Status', 'Catatan', 'Dibuat Pada'];
+        $csvContent .= implode(';', $headers) . "\n";
+
+        // Add data rows
+        foreach ($attendances as $attendance) {
+            $row = [
+                $attendance->id,
+                $attendance->user->name,
+                $attendance->user->email,
+                $attendance->created_at->format('d/m/Y'),
+                $attendance->check_in ?? '',
+                $attendance->check_out ?? '',
+                $attendance->check_in_location ?? '',
+                $attendance->check_out_location ?? '',
+                $attendance->total_jam ?? '',
+                ucfirst($attendance->status),
+                $attendance->keterangan ?? '',
+                $attendance->created_at->format('d/m/Y H:i:s')
+            ];
+
+            // Escape semicolons and quotes in fields
+            $escapedRow = array_map(function ($field) {
+                // Replace semicolons with spaces to avoid breaking CSV structure
+                $field = str_replace(';', ' ', $field);
+                // Wrap in quotes to handle commas and special characters
+                return '"' . str_replace('"', '""', $field) . '"';
+            }, $row);
+
+            $csvContent .= implode(';', $escapedRow) . "\n";
+        }
+
+        // Add summary section
+        $csvContent .= "\n"; // Empty line before summary
+        $csvContent .= "RINGKASAN LAPORAN\n";
+        $csvContent .= "Total Data;" . count($attendances) . "\n";
+
+        // Count by status
+        $statusCounts = $attendances->groupBy('status')->map->count();
+        foreach ($statusCounts as $status => $count) {
+            $csvContent .= "Total " . ucfirst($status) . ";" . $count . "\n";
+        }
+
+        $csvContent .= "\n"; // Empty line
+        $csvContent .= "Laporan ini dibuat secara otomatis dari sistem CatatanKerja\n";
+        $csvContent .= "Hak Cipta © " . date('Y') . " - PT. Example\n";
+
+        // Return CSV download
+        return response($csvContent)
+            ->header('Content-Type', 'text/csv; charset=utf-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+
+    /**
+     * Export reports data to Excel (CSV format)
+     */
+    public function exportReportsExcel(Request $request)
+    {
+        if (session('user')['role'] !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Start building the query
+        $query = Report::with('user')
+            ->whereHas('user', function ($query) {
+                $query->where('is_hidden', false);
+            })
+            ->where('status', '!=', 'draft');
+
+        // Apply filters
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('tanggal', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('tanggal', '<=', $request->end_date);
+        }
+
+        // Get the data
+        $reports = $query->orderBy('tanggal', 'desc')->get();
+
+        // Generate dynamic filename
+        if ($request->filled('user_id')) {
+            $user = User::find($request->user_id);
+            $userName = $user ? str_replace(' ', '_', $user->name) : 'Unknown_User';
+            $filename = 'laporan_kerja_' . $userName . '_' . date('Y-m-d_H-i-s') . '.csv';
+        } else {
+            $filename = 'laporan_kerja_semua_user_' . date('Y-m-d_H-i-s') . '.csv';
+        }
+
+        // Create CSV content with professional report format
+        $csvContent = "\xEF\xBB\xBF"; // UTF-8 BOM
+
+        // Add report header
+        $reportTitle = "LAPORAN KERJA KARYAWAN";
+        if ($request->filled('user_id')) {
+            $user = User::find($request->user_id);
+            if ($user) {
+                $reportTitle = "LAPORAN KERJA - " . strtoupper($user->name);
+            }
+        }
+        $periodText = "";
+
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $periodText = "Periode: " . date('d/m/Y', strtotime($request->start_date)) . " - " . date('d/m/Y', strtotime($request->end_date));
+        } elseif ($request->filled('start_date')) {
+            $periodText = "Tanggal: " . date('d/m/Y', strtotime($request->start_date));
+        } else {
+            $periodText = "Tanggal: " . date('d/m/Y');
+        }
+
+        $generatedAt = "Dicetak pada: " . date('d/m/Y H:i:s');
+
+        // Add title and period information
+        $csvContent .= $reportTitle . "\n";
+        $csvContent .= $periodText . "\n";
+        $csvContent .= $generatedAt . "\n";
+        $csvContent .= "\n"; // Empty line before headers
+
+        // Add headers with semicolon delimiter
+        $headers = ['ID', 'Nama User', 'Email User', 'Tanggal', 'Lokasi', 'Isi Laporan', 'Masalah yang Dihadapi', 'Solusi yang Dilakukan', 'Status', 'Dibuat Pada'];
+        $csvContent .= implode(';', $headers) . "\n";
+
+        // Add data rows
+        foreach ($reports as $report) {
+            $row = [
+                $report->id,
+                $report->user->name,
+                $report->user->email,
+                $report->tanggal ? $report->tanggal->format('d/m/Y') : '',
+                $report->lokasi ?? '',
+                $report->laporan,
+                $report->masalah ?? '',
+                $report->solusi ?? '',
+                ucfirst($report->status),
+                $report->created_at->format('d/m/Y H:i:s')
+            ];
+
+            // Escape semicolons and quotes in fields
+            $escapedRow = array_map(function ($field) {
+                // Replace semicolons with spaces to avoid breaking CSV structure
+                $field = str_replace(';', ' ', $field);
+                // Wrap in quotes to handle commas and special characters
+                return '"' . str_replace('"', '""', $field) . '"';
+            }, $row);
+
+            $csvContent .= implode(';', $escapedRow) . "\n";
+        }
+
+        // Add summary section
+        $csvContent .= "\n"; // Empty line before summary
+        $csvContent .= "RINGKASAN LAPORAN\n";
+        $csvContent .= "Total Data;" . count($reports) . "\n";
+
+        // Count by status
+        $statusCounts = $reports->groupBy('status')->map->count();
+        foreach ($statusCounts as $status => $count) {
+            $csvContent .= "Total " . ucfirst($status) . ";" . $count . "\n";
+        }
+
+        $csvContent .= "\n"; // Empty line
+        $csvContent .= "Laporan ini dibuat secara otomatis dari sistem CatatanKerja\n";
+        $csvContent .= "Hak Cipta © " . date('Y') . " - PT. Example\n";
+
+        // Return CSV download
+        return response($csvContent)
+            ->header('Content-Type', 'text/csv; charset=utf-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
 }
