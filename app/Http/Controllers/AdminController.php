@@ -1111,9 +1111,7 @@ class AdminController extends Controller
 
             // Escape delimiter and quotes in fields
             $escapedRow = array_map(function ($field) use ($delimiter) {
-                // Replace delimiter with spaces to avoid breaking CSV structure
-                $field = str_replace($delimiter, ' ', $field);
-                // Wrap in quotes to handle commas and special characters
+                // Only escape quotes, let delimiter remain since field is properly quoted
                 return '"' . str_replace('"', '""', $field) . '"';
             }, $row);
 
@@ -1123,12 +1121,12 @@ class AdminController extends Controller
         // Add summary section
         $csvContent .= "\n"; // Empty line before summary
         $csvContent .= "RINGKASAN LAPORAN\n";
-        $csvContent .= "Total Data;" . count($attendances) . "\n";
+        $csvContent .= "Total Data" . $delimiter . count($attendances) . "\n";
 
         // Count by status
         $statusCounts = $attendances->groupBy('status')->map->count();
         foreach ($statusCounts as $status => $count) {
-            $csvContent .= "Total " . ucfirst($status) . ";" . $count . "\n";
+            $csvContent .= "Total " . ucfirst($status) . $delimiter . $count . "\n";
         }
 
         $csvContent .= "\n"; // Empty line
@@ -1237,9 +1235,7 @@ class AdminController extends Controller
 
             // Escape delimiter and quotes in fields
             $escapedRow = array_map(function ($field) use ($delimiter) {
-                // Replace delimiter with spaces to avoid breaking CSV structure
-                $field = str_replace($delimiter, ' ', $field);
-                // Wrap in quotes to handle commas and special characters
+                // Only escape quotes, let delimiter remain since field is properly quoted
                 return '"' . str_replace('"', '""', $field) . '"';
             }, $row);
 
@@ -1249,12 +1245,12 @@ class AdminController extends Controller
         // Add summary section
         $csvContent .= "\n"; // Empty line before summary
         $csvContent .= "RINGKASAN LAPORAN\n";
-        $csvContent .= "Total Data;" . count($reports) . "\n";
+        $csvContent .= "Total Data" . $delimiter . count($reports) . "\n";
 
         // Count by status
         $statusCounts = $reports->groupBy('status')->map->count();
         foreach ($statusCounts as $status => $count) {
-            $csvContent .= "Total " . ucfirst($status) . ";" . $count . "\n";
+            $csvContent .= "Total " . ucfirst($status) . $delimiter . $count . "\n";
         }
 
         $csvContent .= "\n"; // Empty line
