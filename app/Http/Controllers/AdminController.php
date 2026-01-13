@@ -1021,6 +1021,9 @@ class AdminController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        // Get delimiter from request (default to semicolon)
+        $delimiter = $request->input('delimiter', ';');
+
         // Start building the query
         $query = Absensi::with('user')
             ->whereHas('user', function ($query) {
@@ -1085,9 +1088,9 @@ class AdminController extends Controller
         $csvContent .= $generatedAt . "\n";
         $csvContent .= "\n"; // Empty line before headers
 
-        // Add headers with semicolon delimiter
+        // Add headers with specified delimiter
         $headers = ['ID', 'Nama User', 'Email User', 'Tanggal', 'Check In', 'Check Out', 'Lokasi Check In', 'Lokasi Check Out', 'Total Jam Kerja', 'Status', 'Catatan', 'Dibuat Pada'];
-        $csvContent .= implode(';', $headers) . "\n";
+        $csvContent .= implode($delimiter, $headers) . "\n";
 
         // Add data rows
         foreach ($attendances as $attendance) {
@@ -1106,15 +1109,15 @@ class AdminController extends Controller
                 $attendance->created_at->format('d/m/Y H:i:s')
             ];
 
-            // Escape semicolons and quotes in fields
-            $escapedRow = array_map(function ($field) {
-                // Replace semicolons with spaces to avoid breaking CSV structure
-                $field = str_replace(';', ' ', $field);
+            // Escape delimiter and quotes in fields
+            $escapedRow = array_map(function ($field) use ($delimiter) {
+                // Replace delimiter with spaces to avoid breaking CSV structure
+                $field = str_replace($delimiter, ' ', $field);
                 // Wrap in quotes to handle commas and special characters
                 return '"' . str_replace('"', '""', $field) . '"';
             }, $row);
 
-            $csvContent .= implode(';', $escapedRow) . "\n";
+            $csvContent .= implode($delimiter, $escapedRow) . "\n";
         }
 
         // Add summary section
@@ -1147,6 +1150,9 @@ class AdminController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        // Get delimiter from request (default to semicolon)
+        $delimiter = $request->input('delimiter', ';');
+
         // Start building the query
         $query = Report::with('user')
             ->whereHas('user', function ($query) {
@@ -1174,9 +1180,11 @@ class AdminController extends Controller
         if ($request->filled('user_id')) {
             $user = User::find($request->user_id);
             $userName = $user ? str_replace(' ', '_', $user->name) : 'Unknown_User';
-            $filename = 'laporan_kerja_' . $userName . '_' . date('Y-m-d_H-i-s') . '.csv';
+            $delimiterText = $delimiter === ',' ? 'comma' : 'semicolon';
+            $filename = 'laporan_kerja_' . $userName . '_' . $delimiterText . '_' . date('Y-m-d_H-i-s') . '.csv';
         } else {
-            $filename = 'laporan_kerja_semua_user_' . date('Y-m-d_H-i-s') . '.csv';
+            $delimiterText = $delimiter === ',' ? 'comma' : 'semicolon';
+            $filename = 'laporan_kerja_semua_user_' . $delimiterText . '_' . date('Y-m-d_H-i-s') . '.csv';
         }
 
         // Create CSV content with professional report format
@@ -1208,9 +1216,9 @@ class AdminController extends Controller
         $csvContent .= $generatedAt . "\n";
         $csvContent .= "\n"; // Empty line before headers
 
-        // Add headers with semicolon delimiter
+        // Add headers with specified delimiter
         $headers = ['ID', 'Nama User', 'Email User', 'Tanggal', 'Lokasi', 'Isi Laporan', 'Masalah yang Dihadapi', 'Solusi yang Dilakukan', 'Status', 'Dibuat Pada'];
-        $csvContent .= implode(';', $headers) . "\n";
+        $csvContent .= implode($delimiter, $headers) . "\n";
 
         // Add data rows
         foreach ($reports as $report) {
@@ -1227,15 +1235,15 @@ class AdminController extends Controller
                 $report->created_at->format('d/m/Y H:i:s')
             ];
 
-            // Escape semicolons and quotes in fields
-            $escapedRow = array_map(function ($field) {
-                // Replace semicolons with spaces to avoid breaking CSV structure
-                $field = str_replace(';', ' ', $field);
+            // Escape delimiter and quotes in fields
+            $escapedRow = array_map(function ($field) use ($delimiter) {
+                // Replace delimiter with spaces to avoid breaking CSV structure
+                $field = str_replace($delimiter, ' ', $field);
                 // Wrap in quotes to handle commas and special characters
                 return '"' . str_replace('"', '""', $field) . '"';
             }, $row);
 
-            $csvContent .= implode(';', $escapedRow) . "\n";
+            $csvContent .= implode($delimiter, $escapedRow) . "\n";
         }
 
         // Add summary section

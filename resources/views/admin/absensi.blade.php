@@ -88,7 +88,7 @@
                 
                 <!-- Export Filters (Hidden by default) -->
                 <div id="exportFilters" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
-                    <form id="exportForm" class="space-y-4">
+                    <div class="space-y-4">
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                             <!-- User Filter -->
                             <div>
@@ -132,11 +132,14 @@
                             <button type="button" onclick="resetExportFilters()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors">
                                 <i class="fas fa-redo mr-2"></i>Reset Filter
                             </button>
-                            <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
-                                <i class="fas fa-file-excel mr-2"></i>Export Excel
+                            <button type="button" onclick="exportAbsensiWithDelimiter(',')" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-file-excel mr-2"></i>Export (,)
+                            </button>
+                            <button type="button" onclick="exportAbsensiWithDelimiter(';')" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                                <i class="fas fa-file-excel mr-2"></i>Export (;)
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -683,43 +686,119 @@
         document.getElementById('exportStatus').value = '';
     }
 
-    // Export form submission
-    document.getElementById('exportForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        const params = new URLSearchParams();
+    // Export absensi with specific delimiter
+    function exportAbsensiWithDelimiter(delimiter) {
+        const formData = new FormData();
         
         // Build query parameters
-        if (formData.get('user_id')) {
-            params.append('user_id', formData.get('user_id'));
+        const userId = document.getElementById('exportUser').value;
+        const startDate = document.getElementById('exportStartDate').value;
+        const endDate = document.getElementById('exportEndDate').value;
+        const status = document.getElementById('exportStatus').value;
+        
+        if (userId) {
+            formData.append('user_id', userId);
         }
-        if (formData.get('start_date')) {
-            params.append('start_date', formData.get('start_date'));
+        if (startDate) {
+            formData.append('start_date', startDate);
         }
-        if (formData.get('end_date')) {
-            params.append('end_date', formData.get('end_date'));
+        if (endDate) {
+            formData.append('end_date', endDate);
         }
-        if (formData.get('status')) {
-            params.append('status', formData.get('status'));
+        if (status) {
+            formData.append('status', status);
         }
+        formData.append('delimiter', delimiter);
+        formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
         
         // Show loading state
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Exporting...';
-        submitBtn.disabled = true;
+        const btnText = delimiter === ',' ? 'Export (,)' : 'Export (;)';
+        const btnColor = delimiter === ',' ? 'bg-blue-600' : 'bg-green-600';
         
-        // Download Excel file
-        const downloadUrl = '/admin/export-absensi-excel?' + params.toString();
-        window.open(downloadUrl, '_blank');
+        // Create temporary button for loading state
+        const tempBtn = document.createElement('button');
+        tempBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Exporting...`;
+        tempBtn.className = `px-4 py-2 ${btnColor} text-white rounded-md transition-colors`;
+        tempBtn.disabled = true;
         
-        // Reset button state
-        setTimeout(() => {
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-        }, 2000);
-    });
+        // Replace the clicked button temporarily
+        const originalBtn = event.target;
+        originalBtn.parentNode.replaceChild(tempBtn, originalBtn);
+        
+        // Send request to export endpoint
+        fetch('/admin/export-absensi-excel', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.blob();
+            }
+            throw new Error('Export failed');
+        })
+        .then(blob => {
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Generate filename
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+            const delimiterText = delimiter === ',' ? 'comma' : 'semicolon';
+            a.download = `absensi_${delimiterText}_${timestamp}.csv`;
+            
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(error => {
+            console.error('Export error:', error);
+            alert('Gagal melakukan export. Silakan coba lagi.');
+        })
+        .finally(() => {
+            // Restore original button
+            originalBtn.parentNode.replaceChild(originalBtn, tempBtn);
+        });
+    }
+
+    // Export form submission - REMOVED (now using individual export buttons)
+    // document.getElementById('exportForm').addEventListener('submit', function(e) {
+    //     e.preventDefault();
+    //     
+    //     const formData = new FormData(this);
+    //     const params = new URLSearchParams();
+    //     
+    //     // Build query parameters
+    //     if (formData.get('user_id')) {
+    //         params.append('user_id', formData.get('user_id'));
+    //     }
+    //     if (formData.get('start_date')) {
+    //         params.append('start_date', formData.get('start_date'));
+    //     }
+    //     if (formData.get('end_date')) {
+    //         params.append('end_date', formData.get('end_date'));
+    //     }
+    //     if (formData.get('status')) {
+    //         params.append('status', formData.get('status'));
+    //     }
+    //     
+    //     // Show loading state
+    //     const submitBtn = this.querySelector('button[type="submit"]');
+    //     const originalText = submitBtn.innerHTML;
+    //     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Exporting...';
+    //     submitBtn.disabled = true;
+    //     
+    //     // Download Excel file
+    //     const downloadUrl = '/admin/export-absensi-excel?' + params.toString();
+    //     window.open(downloadUrl, '_blank');
+    //     
+    //     // Reset button state
+    //     setTimeout(() => {
+    //         submitBtn.innerHTML = originalText;
+    //         submitBtn.disabled = false;
+    //     }, 2000);
+    // });
 
     // Izin management functions
     function filterIzin() {
