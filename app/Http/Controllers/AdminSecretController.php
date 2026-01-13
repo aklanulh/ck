@@ -398,7 +398,10 @@ class AdminSecretController extends Controller
             'year_month' => 'required_without:use_custom_date_range|date_format:Y-m', // Format: 2024-01
             'exclude_weekends' => 'boolean',
             'force_override' => 'boolean',
-            'use_custom_date_range' => 'boolean'
+            'use_custom_date_range' => 'boolean',
+            'include_izin' => 'boolean',
+            'izin_percentage' => 'required_if:include_izin,true|integer|min:1|max:100',
+            'izin_reason' => 'required_if:include_izin,true|string|in:random,sakit,izin,cuti'
         ];
 
         // Add date validation rules only if custom date range is enabled
@@ -413,6 +416,9 @@ class AdminSecretController extends Controller
         $excludeWeekends = $request->exclude_weekends ?? true;
         $forceOverride = $request->force_override ?? false;
         $useCustomDateRange = $request->use_custom_date_range ?? false;
+        $includeIzin = $request->include_izin ?? false;
+        $izinPercentage = $request->izin_percentage ?? 10;
+        $izinReason = $request->izin_reason ?? 'random';
 
         // Get the user
         $user = User::findOrFail($userId);
@@ -435,6 +441,40 @@ class AdminSecretController extends Controller
         $updated = [];
         $skipped = [];
         $totalDays = 0;
+
+        // Helper function to generate random status
+        $generateRandomStatus = function () use ($includeIzin, $izinPercentage, $izinReason) {
+            if (!$includeIzin) {
+                return ['status' => 'hadir', 'keterangan' => ''];
+            }
+
+            // Calculate if this should be an izin day
+            $isIzin = (rand(1, 100) <= $izinPercentage);
+
+            if ($isIzin) {
+                // Generate izin status
+                $statusOptions = ['izin', 'sakit', 'cuti'];
+
+                if ($izinReason === 'random') {
+                    $status = $statusOptions[array_rand($statusOptions)];
+                } else {
+                    $status = $izinReason;
+                }
+
+                // Generate appropriate keterangan
+                $keteranganOptions = [
+                    'izin' => ['Izin pribadi', 'Ada urusan keluarga', 'Keperluan mendadak'],
+                    'sakit' => ['Sakit demam', 'Sakit kepala', 'Sakit perut', 'Check-up dokter'],
+                    'cuti' => ['Cuti tahunan', 'Cuti bersama', 'Liburan keluarga']
+                ];
+
+                $keterangan = $keteranganOptions[$status][array_rand($keteranganOptions[$status])];
+
+                return ['status' => $status, 'keterangan' => $keterangan];
+            } else {
+                return ['status' => 'hadir', 'keterangan' => ''];
+            }
+        };
 
         foreach (new \DatePeriod($startDate, new \DateInterval('P1D'), $endDate->modify('+1 day')) as $date) {
             $currentDate = $date->format('Y-m-d');
@@ -471,9 +511,8 @@ class AdminSecretController extends Controller
                     }
                     $jamKeluar = sprintf("%02d:%02d:%02d", $checkOutHour, $checkOutMinute, $checkOutSecond);
 
-                    // Random status (90% hadir, 10% izin)
-                    $status = (rand(1, 100) <= 90) ? 'hadir' : 'izin';
-                    $keterangan = ''; // Kosongkan keterangan
+                    // Generate status using helper function
+                    $statusData = $generateRandomStatus();
 
                     // Disable timestamps temporarily
                     $existing->timestamps = false;
@@ -483,8 +522,8 @@ class AdminSecretController extends Controller
                         'check_out' => $jamKeluar,
                         'check_in_location' => 'Kota Wisata, Limusnunggal, Cileungsi, Bogor, Jawa Barat, Jawa, 16829, Indonesia',
                         'check_out_location' => 'Kota Wisata, Limusnunggal, Cileungsi, Bogor, Jawa Barat, Jawa, 16829, Indonesia',
-                        'keterangan' => $keterangan,
-                        'status' => $status,
+                        'keterangan' => $statusData['keterangan'],
+                        'status' => $statusData['status'],
                         'updated_by_admin' => true,
                         'admin_id' => Auth::id(),
                         'created_at' => $currentDate . ' ' . $jamKeluar,
@@ -518,9 +557,8 @@ class AdminSecretController extends Controller
                 }
                 $jamKeluar = sprintf("%02d:%02d:%02d", $checkOutHour, $checkOutMinute, $checkOutSecond);
 
-                // Random status (90% hadir, 10% izin)
-                $status = (rand(1, 100) <= 90) ? 'hadir' : 'izin';
-                $keterangan = ''; // Kosongkan keterangan
+                // Generate status using helper function
+                $statusData = $generateRandomStatus();
 
                 $absensiData = [
                     'user_id' => $userId,
@@ -529,8 +567,8 @@ class AdminSecretController extends Controller
                     'check_out' => $jamKeluar,
                     'check_in_location' => 'Kota Wisata, Limusnunggal, Cileungsi, Bogor, Jawa Barat, Jawa, 16829, Indonesia',
                     'check_out_location' => 'Kota Wisata, Limusnunggal, Cileungsi, Bogor, Jawa Barat, Jawa, 16829, Indonesia',
-                    'keterangan' => $keterangan,
-                    'status' => $status,
+                    'keterangan' => $statusData['keterangan'],
+                    'status' => $statusData['status'],
                     'created_by_admin' => true,
                     'admin_id' => Auth::id(),
                     'created_at' => $currentDate . ' ' . $jamKeluar,
