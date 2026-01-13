@@ -93,6 +93,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/secret/kelola-pengguna', [AdminSecretController::class, 'kelolaPengguna'])->name('admin.secret.kelola-pengguna');
         Route::post('/admin/secret/toggle-user/{userId}', [AdminSecretController::class, 'toggleUserVisibility'])->name('admin.secret.toggle-user');
         Route::get('/admin/secret/custom-absensi', [AdminSecretController::class, 'customAbsensi'])->name('admin.secret.custom-absensi');
+        Route::get('/admin/secret/custom-absensi/filter', [AdminSecretController::class, 'filterAbsensi'])->name('admin.secret.filter-absensi');
+        Route::delete('/admin/secret/custom-absensi/bulk-delete', [AdminSecretController::class, 'bulkDeleteAbsensi'])->name('admin.secret.bulk-delete-absensi');
         Route::post('/admin/secret/custom-absensi', [AdminSecretController::class, 'createCustomAbsensi'])->name('admin.secret.create-absensi');
         Route::put('/admin/secret/custom-absensi/{id}', [AdminSecretController::class, 'updateAbsensi'])->name('admin.secret.update-absensi');
         Route::get('/admin/secret/custom-absensi/{id}/edit-data', [AdminSecretController::class, 'getAbsensiData'])->name('admin.secret.get-absensi-data');

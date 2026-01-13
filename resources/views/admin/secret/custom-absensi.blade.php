@@ -266,17 +266,93 @@
                     <!-- Recent Absensi -->
                     <div class="bg-white shadow rounded-lg">
                         <div class="px-4 py-5 sm:p-6">
-                            <div class="flex justify-between items-center mb-4">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-3 sm:space-y-0">
                                 <h3 class="text-lg font-medium text-gray-900">Riwayat Absensi Terbaru</h3>
                                 <button onclick="refreshData()" class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                                     🔄 Refresh
                                 </button>
                             </div>
                             
+                            <!-- Filter and Sort Options -->
+                            <div class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Filter User</label>
+                                        <select id="filterUser" onchange="applyFilters()" class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                            <option value="">Semua User</option>
+                                            @foreach($users as $user)
+                                                <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Filter Status</label>
+                                        <select id="filterStatus" onchange="applyFilters()" class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                            <option value="">Semua Status</option>
+                                            <option value="hadir">Hadir</option>
+                                            <option value="izin">Izin</option>
+                                            <option value="sakit">Sakit</option>
+                                            <option value="cuti">Cuti</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Mulai</label>
+                                        <input type="date" id="filterStartDate" onchange="applyFilters()" class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Selesai</label>
+                                        <input type="date" id="filterEndDate" onchange="applyFilters()" class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Urutkan</label>
+                                        <select id="sortBy" onchange="applyFilters()" class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                            <option value="tanggal_desc">Tanggal (Terbaru)</option>
+                                            <option value="tanggal_asc">Tanggal (Terlama)</option>
+                                            <option value="name_asc">Nama (A-Z)</option>
+                                            <option value="name_desc">Nama (Z-A)</option>
+                                            <option value="status_asc">Status (A-Z)</option>
+                                            <option value="check_in_asc">Check In (Paling Awal)</option>
+                                            <option value="check_in_desc">Check In (Paling Akhir)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Jumlah Data</label>
+                                        <select id="limit" onchange="applyFilters()" class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                            <option value="10">10 Data</option>
+                                            <option value="25">25 Data</option>
+                                            <option value="50" selected>50 Data</option>
+                                            <option value="100">100 Data</option>
+                                            <option value="all">Semua Data</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">&nbsp;</label>
+                                        <button onclick="resetFilters()" class="w-full px-2 py-1.5 text-xs bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-500">
+                                            🔄 Reset Filter
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Bulk Actions -->
+                            <div class="mb-3 flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <span id="selectedCount" class="text-sm text-gray-600">0 data dipilih</span>
+                                    <button onclick="bulkDelete()" id="bulkDeleteBtn" class="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                        🗑️ Hapus Terpilih
+                                    </button>
+                                </div>
+                            </div>
+                            
                             <div class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-200">
                                     <thead class="bg-gray-50">
                                         <tr>
+                                            <th class="px-6 py-3 text-left">
+                                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" class="w-5 h-5 rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                            </th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Tanggal
                                             </th>
@@ -297,6 +373,9 @@
                                     <tbody id="absensiTableBody" class="bg-white divide-y divide-gray-200">
                                         @foreach($absensi as $absen)
                                             <tr>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <input type="checkbox" class="row-checkbox w-5 h-5 rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="{{ $absen->id }}">
+                                                </td>
                                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                     {{ \Carbon\Carbon::parse($absen->tanggal)->format('d/m/Y') }}
                                                 </td>
@@ -669,5 +748,232 @@ document.addEventListener('DOMContentLoaded', function() {
         customDateRangeSettings.style.display = 'none';
     }
 });
+
+// Filter and Sort Functions
+function applyFilters() {
+    const filterUser = document.getElementById('filterUser').value;
+    const filterStatus = document.getElementById('filterStatus').value;
+    const filterStartDate = document.getElementById('filterStartDate').value;
+    const filterEndDate = document.getElementById('filterEndDate').value;
+    const sortBy = document.getElementById('sortBy').value;
+    const limit = document.getElementById('limit').value;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (filterUser) params.append('filter_user', filterUser);
+    if (filterStatus) params.append('filter_status', filterStatus);
+    if (filterStartDate) params.append('filter_start_date', filterStartDate);
+    if (filterEndDate) params.append('filter_end_date', filterEndDate);
+    if (sortBy) params.append('sort_by', sortBy);
+    if (limit) params.append('limit', limit);
+    
+    // Show loading state
+    const tbody = document.getElementById('absensiTableBody');
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="5" class="px-6 py-12 text-center">
+                <div class="flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    <span class="ml-2 text-gray-600">Memuat data...</span>
+                </div>
+            </td>
+        </tr>
+    `;
+    
+    // Fetch filtered data
+    fetch(`/admin/secret/custom-absensi/filter?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderAbsensiTable(data.data);
+                updateInfoText(data.count);
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="text-gray-500">
+                                <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                                <p class="text-lg font-medium">Gagal memuat data</p>
+                                <p class="text-sm mt-1">Terjadi kesalahan saat memfilter data</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center">
+                        <div class="text-gray-500">
+                            <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
+                            <p class="text-lg font-medium">Gagal memuat data</p>
+                            <p class="text-sm mt-1">Terjadi kesalahan saat memfilter data</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+}
+
+function renderAbsensiTable(absensiData) {
+    const tbody = document.getElementById('absensiTableBody');
+    
+    if (absensiData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="px-6 py-12 text-center">
+                    <div class="text-gray-500">
+                        <i class="fas fa-clock text-4xl mb-4"></i>
+                        <p class="text-lg font-medium">Tidak ada data absensi</p>
+                        <p class="text-sm mt-1">Tidak ada data absensi dengan filter yang dipilih</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        updateSelectedCount();
+        return;
+    }
+    
+    let html = '';
+    absensiData.forEach(absen => {
+        html += `
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <input type="checkbox" class="row-checkbox w-5 h-5 rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" value="${absen.id}" onchange="updateSelectedCount()">
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${new Date(absen.tanggal).toLocaleDateString('id-ID')}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">${absen.user.name}</div>
+                    <div class="text-sm text-gray-500">${absen.user.email}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${absen.check_in && absen.check_out ? 
+                        `${absen.check_in} - ${absen.check_out}` : 
+                        absen.check_in ? absen.check_in : '-'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        ${absen.status === 'hadir' ? 'bg-green-100 text-green-800' : 
+                          absen.status === 'izin' ? 'bg-yellow-100 text-yellow-800' : 
+                          absen.status === 'sakit' ? 'bg-red-100 text-red-800' : 
+                          'bg-blue-100 text-blue-800'}">
+                        ${absen.status.charAt(0).toUpperCase() + absen.status.slice(1)}
+                    </span>
+                    ${absen.created_by_admin ? '<span class="ml-1 text-xs text-purple-600">👨‍💻</span>' : ''}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button onclick="editAbsensi(${absen.id})" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                        ✏️ Edit
+                    </button>
+                    <button onclick="deleteAbsensi(${absen.id})" class="text-red-600 hover:text-red-900">
+                        🗑️ Hapus
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+    updateSelectedCount();
+}
+
+function updateInfoText(count) {
+    // You can add info text here if needed
+    console.log(`Showing ${count} records`);
+}
+
+function resetFilters() {
+    document.getElementById('filterUser').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterStartDate').value = '';
+    document.getElementById('filterEndDate').value = '';
+    document.getElementById('sortBy').value = 'tanggal_desc';
+    document.getElementById('limit').value = '50';
+    
+    applyFilters();
+}
+
+// Checkbox and Bulk Delete Functions
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.row-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+    
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+    const selectedCount = checkboxes.length;
+    const selectedCountSpan = document.getElementById('selectedCount');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    
+    selectedCountSpan.textContent = `${selectedCount} data dipilih`;
+    
+    // Enable/disable bulk delete button
+    if (selectedCount > 0) {
+        bulkDeleteBtn.disabled = false;
+    } else {
+        bulkDeleteBtn.disabled = true;
+    }
+}
+
+function bulkDelete() {
+    const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (selectedIds.length === 0) {
+        alert('Pilih minimal satu data untuk dihapus!');
+        return;
+    }
+    
+    if (!confirm(`Apakah Anda yakin ingin menghapus ${selectedIds.length} data absensi yang dipilih?`)) {
+        return;
+    }
+    
+    // Show loading state
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const originalText = bulkDeleteBtn.innerHTML;
+    bulkDeleteBtn.innerHTML = '⏳ Menghapus...';
+    bulkDeleteBtn.disabled = true;
+    
+    // Send bulk delete request
+    fetch('/admin/secret/custom-absensi/bulk-delete', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+            ids: selectedIds
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`${data.deleted} data absensi berhasil dihapus!`);
+            applyFilters(); // Reload data
+        } else {
+            alert(data.message || 'Gagal menghapus data absensi');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat menghapus data absensi');
+    })
+    .finally(() => {
+        // Restore button
+        bulkDeleteBtn.innerHTML = originalText;
+        bulkDeleteBtn.disabled = false;
+    });
+}
 </script>
 @endsection

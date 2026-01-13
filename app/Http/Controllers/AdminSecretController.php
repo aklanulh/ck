@@ -66,12 +66,165 @@ class AdminSecretController extends Controller
     /**
      * Halaman custom riwayat absensi cepat
      */
-    public function customAbsensi()
+    public function customAbsensi(Request $request)
     {
         $users = User::where('is_hidden', false)->orderBy('name')->get();
-        $absensi = Absensi::with('user')->latest()->take(50)->get();
+
+        // Build query with filters
+        $query = Absensi::with('user');
+
+        // Filter by user
+        if ($request->filled('filter_user')) {
+            $query->where('user_id', $request->filter_user);
+        }
+
+        // Filter by status
+        if ($request->filled('filter_status')) {
+            $query->where('status', $request->filter_status);
+        }
+
+        // Filter by date range
+        if ($request->filled('filter_start_date')) {
+            $query->whereDate('tanggal', '>=', $request->filter_start_date);
+        }
+
+        if ($request->filled('filter_end_date')) {
+            $query->whereDate('tanggal', '<=', $request->filter_end_date);
+        }
+
+        // Apply sorting
+        $sortBy = $request->get('sort_by', 'tanggal_desc');
+        switch ($sortBy) {
+            case 'tanggal_asc':
+                $query->orderBy('tanggal', 'asc');
+                break;
+            case 'name_asc':
+                $query->join('users', 'absensi.user_id', '=', 'users.id')
+                    ->orderBy('users.name', 'asc')
+                    ->select('absensi.*');
+                break;
+            case 'name_desc':
+                $query->join('users', 'absensi.user_id', '=', 'users.id')
+                    ->orderBy('users.name', 'desc')
+                    ->select('absensi.*');
+                break;
+            case 'status_asc':
+                $query->orderBy('status', 'asc');
+                break;
+            case 'check_in_asc':
+                $query->orderBy('check_in', 'asc');
+                break;
+            case 'check_in_desc':
+                $query->orderBy('check_in', 'desc');
+                break;
+            case 'tanggal_desc':
+            default:
+                $query->orderBy('tanggal', 'desc');
+                break;
+        }
+
+        // Apply limit
+        $limit = $request->get('limit', '50');
+        if ($limit !== 'all') {
+            $query->limit((int)$limit);
+        }
+
+        $absensi = $query->get();
 
         return view('admin.secret.custom-absensi', compact('users', 'absensi'));
+    }
+
+    /**
+     * Filter absensi data for AJAX requests
+     */
+    public function filterAbsensi(Request $request)
+    {
+        // Build query with filters
+        $query = Absensi::with('user');
+
+        // Filter by user
+        if ($request->filled('filter_user')) {
+            $query->where('user_id', $request->filter_user);
+        }
+
+        // Filter by status
+        if ($request->filled('filter_status')) {
+            $query->where('status', $request->filter_status);
+        }
+
+        // Filter by date range
+        if ($request->filled('filter_start_date')) {
+            $query->whereDate('tanggal', '>=', $request->filter_start_date);
+        }
+
+        if ($request->filled('filter_end_date')) {
+            $query->whereDate('tanggal', '<=', $request->filter_end_date);
+        }
+
+        // Apply sorting
+        $sortBy = $request->get('sort_by', 'tanggal_desc');
+        switch ($sortBy) {
+            case 'tanggal_asc':
+                $query->orderBy('tanggal', 'asc');
+                break;
+            case 'name_asc':
+                $query->join('users', 'absensi.user_id', '=', 'users.id')
+                    ->orderBy('users.name', 'asc')
+                    ->select('absensi.*');
+                break;
+            case 'name_desc':
+                $query->join('users', 'absensi.user_id', '=', 'users.id')
+                    ->orderBy('users.name', 'desc')
+                    ->select('absensi.*');
+                break;
+            case 'status_asc':
+                $query->orderBy('status', 'asc');
+                break;
+            case 'check_in_asc':
+                $query->orderBy('check_in', 'asc');
+                break;
+            case 'check_in_desc':
+                $query->orderBy('check_in', 'desc');
+                break;
+            case 'tanggal_desc':
+            default:
+                $query->orderBy('tanggal', 'desc');
+                break;
+        }
+
+        // Apply limit
+        $limit = $request->get('limit', '50');
+        if ($limit !== 'all') {
+            $query->limit((int)$limit);
+        }
+
+        $absensi = $query->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $absensi,
+            'count' => $absensi->count()
+        ]);
+    }
+
+    /**
+     * Bulk delete absensi records
+     */
+    public function bulkDeleteAbsensi(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer|exists:absensi,id'
+        ]);
+
+        $ids = $request->ids;
+        $deletedCount = Absensi::whereIn('id', $ids)->delete();
+
+        return response()->json([
+            'success' => true,
+            'deleted' => $deletedCount,
+            'message' => "{$deletedCount} data absensi berhasil dihapus"
+        ]);
     }
 
     /**
