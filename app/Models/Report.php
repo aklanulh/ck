@@ -66,8 +66,8 @@ class Report extends Model
         if (is_array($photos)) {
             foreach ($photos as &$photo) {
                 if (isset($photo['path'])) {
-                    // Use Storage::url() for consistent URL generation
-                    $photo['url'] = Storage::url($photo['path']);
+                    // Force URL to use /public/storage/ for hosting compatibility
+                    $photo['url'] = config('app.url') . '/public/storage/' . $photo['path'];
                 }
             }
         }
