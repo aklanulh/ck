@@ -895,6 +895,32 @@ class AdminController extends Controller
     }
 
     /**
+     * Get all users for attendance chart navigation.
+     */
+    public function getAllUsers(Request $request)
+    {
+        if (session('user')['role'] !== 'admin') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $users = User::where('is_hidden', false)
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $users
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to load users: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get monthly attendance chart data for specific user.
      */
     public function getUserAttendanceChart(Request $request)
@@ -920,13 +946,22 @@ class AdminController extends Controller
 
             // Get attendance data for the month
             $attendances = Absensi::where('user_id', $userId)
-                ->whereDate('tanggal', '>=', $startDate)
-                ->whereDate('tanggal', '<=', $endDate)
-                ->orderBy('tanggal')
+                ->whereDate('created_at', '>=', $startDate)
+                ->whereDate('created_at', '<=', $endDate)
+                ->orderBy('created_at')
                 ->get();
+
+            // Debug: log the query results
+            \Log::info("Attendance query for user {$userId} in {$month}: Found {$attendances->count()} records");
 
             // Get user info
             $user = User::find($userId);
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'User not found'
+                ], 404);
+            }
 
             // Prepare chart data
             $chartData = [];
@@ -934,8 +969,8 @@ class AdminController extends Controller
             $checkOutTimes = [];
 
             foreach ($attendances as $attendance) {
-                $date = $attendance->tanggal->format('Y-m-d');
-                $day = $attendance->tanggal->format('d');
+                $date = $attendance->created_at->format('Y-m-d');
+                $day = $attendance->created_at->format('d');
 
                 $chartData[] = [
                     'date' => $date,

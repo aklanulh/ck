@@ -1206,6 +1206,64 @@
     let allUsers = [];
     let currentUserIndex = -1;
 
+    // Load all users for navigation
+    async function loadAllUsers() {
+        try {
+            const response = await fetch('/api/admin/get-all-users');
+            const data = await response.json();
+            
+            if (data.success) {
+                allUsers = data.data;
+                currentUserIndex = allUsers.findIndex(user => user.id === currentUserId);
+                updateUserNavigationButtons();
+            } else {
+                console.error('Failed to load users:', data.error);
+            }
+        } catch (error) {
+            console.error('Error loading users:', error);
+        }
+    }
+
+    // Update navigation buttons state
+    function updateUserNavigationButtons() {
+        const prevBtn = document.getElementById('prevUserBtn');
+        const nextBtn = document.getElementById('nextUserBtn');
+        
+        if (prevBtn && nextBtn) {
+            prevBtn.disabled = currentUserIndex <= 0;
+            nextBtn.disabled = currentUserIndex >= allUsers.length - 1;
+            
+            prevBtn.classList.toggle('text-gray-400', currentUserIndex <= 0);
+            prevBtn.classList.toggle('hover:text-gray-600', currentUserIndex > 0);
+            prevBtn.classList.toggle('disabled', currentUserIndex <= 0);
+            
+            nextBtn.classList.toggle('text-gray-400', currentUserIndex >= allUsers.length - 1);
+            nextBtn.classList.toggle('hover:text-gray-600', currentUserIndex < allUsers.length - 1);
+            nextBtn.classList.toggle('disabled', currentUserIndex >= allUsers.length - 1);
+        }
+    }
+
+    // Navigate between users
+    async function navigateUser(direction) {
+        if (direction === 'prev' && currentUserIndex > 0) {
+            currentUserIndex--;
+        } else if (direction === 'next' && currentUserIndex < allUsers.length - 1) {
+            currentUserIndex++;
+        } else {
+            return;
+        }
+        
+        const newUser = allUsers[currentUserIndex];
+        currentUserId = newUser.id;
+        
+        // Load chart data for new user
+        const monthSelect = document.getElementById('chartMonthSelect');
+        const currentMonth = monthSelect ? monthSelect.value : new Date().toISOString().slice(0, 7);
+        
+        await loadAttendanceChart(currentUserId, currentMonth);
+        updateUserNavigationButtons();
+    }
+
     async function showAttendanceChart(userId) {
         currentUserId = userId;
         
@@ -1262,21 +1320,38 @@
 
     async function loadAttendanceChart(userId, month) {
         try {
+            console.log(`Loading attendance chart for user ${userId}, month ${month}`);
             const response = await fetch(`/api/admin/user-attendance-chart?user_id=${userId}&month=${month}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const data = await response.json();
+            console.log('Chart data received:', data);
             
             if (data.success) {
                 renderAttendanceChart(data.data);
             } else {
+                console.error('Chart API returned error:', data.error);
                 showNotification(data.error || 'Gagal memuat data grafik', 'error');
             }
         } catch (error) {
             console.error('Error loading attendance chart:', error);
-            showNotification('Terjadi kesalahan saat memuat grafik', 'error');
+            showNotification('Terjadi kesalahan saat memuat grafik: ' + error.message, 'error');
         }
     }
 
     function renderAttendanceChart(data) {
+        console.log('Rendering chart with data:', data);
+        
+        // Validate data structure
+        if (!data || !data.user || !data.check_in_times || !data.check_out_times) {
+            console.error('Invalid data structure received:', data);
+            showNotification('Data grafik tidak valid', 'error');
+            return;
+        }
+        
         // Update user info
         document.getElementById('chartUserInfo').innerHTML = `
             <div class="flex items-center bg-gray-50 p-4 rounded-lg">
@@ -1356,7 +1431,26 @@
         document.getElementById('chartStats').innerHTML = statsHtml;
         
         // Prepare chart data
-        const ctx = document.getElementById('attendanceChart').getContext('2d');
+        const canvas = document.getElementById('attendanceChart');
+        if (!canvas) {
+            console.error('Chart canvas element not found');
+            showNotification('Elemen grafik tidak ditemukan', 'error');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            console.error('Failed to get canvas context');
+            showNotification('Gagal membuat konteks grafik', 'error');
+            return;
+        }
+        
+        // Check if Chart is available
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js is not loaded');
+            showNotification('Library grafik tidak dimuat', 'error');
+            return;
+        }
         
         // Destroy existing chart if it exists
         if (attendanceChart) {
