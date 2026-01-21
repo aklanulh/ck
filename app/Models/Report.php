@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Report extends Model
 {
@@ -65,8 +66,8 @@ class Report extends Model
         if (is_array($photos)) {
             foreach ($photos as &$photo) {
                 if (isset($photo['path'])) {
-                    // Ensure URL uses correct format for hosting
-                    $photo['url'] = config('app.url') . '/public/storage/' . $photo['path'];
+                    // Use Storage::url() for consistent URL generation
+                    $photo['url'] = Storage::url($photo['path']);
                 }
             }
         }
