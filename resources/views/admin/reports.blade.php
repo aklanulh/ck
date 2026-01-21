@@ -267,8 +267,8 @@
 
 <!-- Photo Preview Modal -->
 <div id="photoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden items-center justify-center p-4" onclick="closePhotoModalOnBackdrop(event)">
-    <div class="relative max-w-4xl max-h-full" onclick="event.stopPropagation()">
-        <img id="modalImage" src="" alt="Full size photo" class="max-w-full max-h-full rounded-lg">
+    <div class="relative w-full h-full max-w-4xl max-h-[90vh] flex items-center justify-center" onclick="event.stopPropagation()">
+        <img id="modalImage" src="" alt="Full size photo" class="max-w-full max-h-full object-contain rounded-lg">
         <button type="button" onclick="closePhotoModal()" class="absolute top-4 right-4 bg-white bg-opacity-90 text-gray-800 rounded-full p-2 hover:bg-opacity-100 transition-all">
             <i class="fas fa-times text-xl"></i>
         </button>
