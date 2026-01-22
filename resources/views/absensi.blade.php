@@ -420,6 +420,14 @@
                                                     </span>
                                                 @endif
                                             </div>
+                                            @if($attendance->keterangan)
+                                                <div class="mt-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                                                    <p class="text-xs text-blue-700">
+                                                        <i class="fas fa-sticky-note mr-1"></i>
+                                                        {{ $attendance->keterangan }}
+                                                    </p>
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="text-right">
