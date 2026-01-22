@@ -91,7 +91,7 @@ class AuthController extends Controller
             $attendanceHistory = cache()->remember($historyCacheKey, 600, function () use ($userId) {
                 return Absensi::select('id', 'user_id', 'tanggal', 'check_in', 'check_in_location', 'check_out', 'check_out_location', 'keterangan', 'status', 'total_jam')
                     ->where('user_id', $userId)
-                    ->whereDate('tanggal', '>=', now()->subDays(3))
+                    ->whereDate('tanggal', '>=', now()->subDays(5))
                     ->orderBy('tanggal', 'desc')
                     ->get();
             });
