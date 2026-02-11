@@ -70,51 +70,60 @@
 </div>
 
 <!-- Export Excel Section -->
-<div class="mb-6 bg-white rounded-lg shadow p-4">
-    <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-medium text-gray-900">Export Laporan</h3>
-        <button onclick="toggleExportFilters()" class="text-purple-600 hover:text-purple-800 font-medium text-sm">
-            <i class="fas fa-filter mr-2"></i>Filter & Export
-        </button>
-    </div>
-    
-    <div id="exportFilters" class="hidden">
-        <div class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                    <label for="exportUser" class="block text-sm font-medium text-gray-700 mb-2">User</label>
-                    <select id="exportUser" name="user_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
-                        <option value="">Semua User</option>
-                        @foreach($users as $user)
-                            <option value="{{ $user->id }}">{{ $user->name }}</option>
-                        @endforeach
-                    </select>
+<div class="bg-white shadow rounded-lg overflow-hidden mb-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div>
+                <h3 class="text-lg font-medium text-gray-900">Export Laporan</h3>
+                <p class="text-sm text-gray-500 mt-1">Export data laporan ke Excel dengan filter yang sesuai kebutuhan</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="toggleExportFilters()" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                    <i class="fas fa-filter mr-2"></i>Filter & Export
+                </button>
+            </div>
+        </div>
+        
+        <!-- Export Filters (Hidden by default) -->
+        <div id="exportFilters" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label for="exportUser" class="block text-sm font-medium text-gray-700 mb-2">User</label>
+                        <select id="exportUser" name="user_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="">Semua User</option>
+                            @foreach($users as $user)
+                                <option value="{{ $user->id }}">{{ $user->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="exportStartDate" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Mulai</label>
+                        <input type="date" id="exportStartDate" name="start_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    
+                    <div>
+                        <label for="exportEndDate" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Selesai</label>
+                        <input type="date" id="exportEndDate" name="end_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    </div>
+                    
+                    <div class="flex items-end space-x-2">
+                        <button type="button" onclick="viewFilteredData()" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                            <i class="fas fa-eye mr-2"></i>View
+                        </button>
+                        <button type="button" onclick="exportWithDelimiter(',')" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-file-excel mr-2"></i>Export (,)
+                        </button>
+                        <button type="button" onclick="exportWithDelimiter(';')" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+                            <i class="fas fa-file-excel mr-2"></i>Export (;)
+                        </button>
+                        <button type="button" onclick="resetExportFilters()" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
+                            <i class="fas fa-undo mr-2"></i>Reset
+                        </button>
+                    </div>
                 </div>
-                
-                <div>
-                    <label for="exportStartDate" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Mulai</label>
-                    <input type="date" id="exportStartDate" name="start_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
-                </div>
-                
-                <div>
-                    <label for="exportEndDate" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Selesai</label>
-                    <input type="date" id="exportEndDate" name="end_date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
-                </div>
-                
-                <div class="flex items-end space-x-2">
-                    <button type="button" onclick="viewFilteredData()" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
-                        <i class="fas fa-eye mr-2"></i>View
-                    </button>
-                    <button type="button" onclick="exportWithDelimiter(',')" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                        <i class="fas fa-file-excel mr-2"></i>Export (,)
-                    </button>
-                    <button type="button" onclick="exportWithDelimiter(';')" class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
-                        <i class="fas fa-file-excel mr-2"></i>Export (;)
-                    </button>
-                    <button type="button" onclick="resetExportFilters()" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors">
-                        <i class="fas fa-undo mr-2"></i>Reset
-                    </button>
-                </div>
+            </div>
         </div>
     </div>
 </div>
