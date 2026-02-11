@@ -543,6 +543,7 @@ class AuthController extends Controller
                     $photoEvidence[] = $photo;
                 }
             }
+            \Log::info('Photo evidence processed for draft', ['count' => count($photoEvidence), 'photos' => $photoEvidence]);
         }
 
         \Log::info('Validation passed');
@@ -661,8 +662,8 @@ class AuthController extends Controller
             $timestamp = $request->input('timestamp');
             $lokasi = $request->input('lokasi');
 
-            // Generate unique filename
-            $filename = 'photo_' . $user['id'] . '_' . time() . '_' . uniqid() . '.jpg';
+            // Generate unique filename with hybrid format
+            $filename = 'photo_' . $user['id'] . '_' . date('Ymd_His') . '_' . uniqid() . '.jpg';
 
             // Store photo
             $path = $photo->storeAs('photos', $filename, 'public');

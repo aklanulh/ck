@@ -634,7 +634,10 @@
                 // Only cleanup if form is not submitted (no report saved)
                 const formSubmitted = sessionStorage.getItem('reportSubmitted') === 'true';
                 
+                console.log('Cleanup photos called. Form submitted:', formSubmitted, 'Photos count:', capturedPhotos.length);
+                
                 if (!formSubmitted) {
+                    console.log('Deleting photos from server...');
                     // Delete all uploaded photos from server
                     capturedPhotos.forEach(photo => {
                         fetch('{{ route("report.deletePhoto") }}', {
@@ -647,10 +650,16 @@
                                 photo_path: photo.path
                             })
                         })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('Photo deleted:', photo.path, data);
+                        })
                         .catch(error => {
                             console.error('Error cleaning up photo:', error);
                         });
                     });
+                } else {
+                    console.log('Form was submitted, keeping photos on server.');
                 }
                 
                 // Clear the flag
