@@ -198,14 +198,33 @@ class AdminController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
 
-        // Get attendance for the specific date
-        $absensi = Absensi::with('user')
+        // Get attendance for specific date with filters
+        $absensiQuery = Absensi::with('user')
             ->whereHas('user', function ($query) {
                 $query->where('is_hidden', false);
-            })
-            ->whereDate('created_at', $date)
-            ->orderBy('created_at', 'desc')
-            ->get();
+            });
+
+        // Apply date filter (specific date or date range)
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            // Date range filter
+            $absensiQuery->whereDate('created_at', '>=', $request->start_date)
+                ->whereDate('created_at', '<=', $request->end_date);
+        } else {
+            // Single date filter (default behavior)
+            $absensiQuery->whereDate('created_at', $date);
+        }
+
+        // Apply user filter
+        if ($request->filled('user_id')) {
+            $absensiQuery->where('user_id', $request->user_id);
+        }
+
+        // Apply status filter
+        if ($request->filled('status')) {
+            $absensiQuery->where('status', $request->status);
+        }
+
+        $absensi = $absensiQuery->orderBy('created_at', 'desc')->get();
 
         // Add time calculations for each attendance record
         foreach ($absensi as $absen) {
@@ -333,15 +352,29 @@ class AdminController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'email']);
 
-        // Get reports for the specific date
-        $reports = Report::with('user')
+        // Get reports for the specific date with filters
+        $reportsQuery = Report::with('user')
             ->whereHas('user', function ($query) {
                 $query->where('is_hidden', false);
             })
-            ->where('status', '!=', 'draft')
-            ->whereDate('tanggal', $date)
-            ->orderBy('tanggal', 'desc')
-            ->get();
+            ->where('status', '!=', 'draft');
+
+        // Apply date filter (specific date or date range)
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            // Date range filter
+            $reportsQuery->whereDate('tanggal', '>=', $request->start_date)
+                ->whereDate('tanggal', '<=', $request->end_date);
+        } else {
+            // Single date filter (default behavior)
+            $reportsQuery->whereDate('tanggal', $date);
+        }
+
+        // Apply user filter
+        if ($request->filled('user_id')) {
+            $reportsQuery->where('user_id', $request->user_id);
+        }
+
+        $reports = $reportsQuery->orderBy('tanggal', 'desc')->get();
 
         // Calculate previous and next dates
         $previousDate = $dateObj->copy()->subDay()->format('Y-m-d');

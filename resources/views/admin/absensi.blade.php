@@ -129,6 +129,9 @@
                         
                         <!-- Export Actions -->
                         <div class="flex flex-col sm:flex-row gap-3 mt-4">
+                            <button type="button" onclick="viewFilteredAbsensi()" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+                                <i class="fas fa-eye mr-2"></i>View
+                            </button>
                             <button type="button" onclick="resetExportFilters()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors">
                                 <i class="fas fa-redo mr-2"></i>Reset Filter
                             </button>
@@ -150,7 +153,26 @@
                 <div class="flex justify-between items-center">
                     <div>
                         <h3 class="text-lg font-medium text-gray-900">Riwayat Absensi</h3>
-                        <p class="text-sm text-gray-500 mt-1">Tabel menunjukkan lokasi check in/check out dan selisih waktu dari jam standar (Masuk 08:00, Pulang 17:00)</p>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Tabel menunjukkan lokasi check in/check out dan selisih waktu dari jam standar (Masuk 08:00, Pulang 17:00)
+                            @if(request()->filled('user_id') || request()->filled('start_date') || request()->filled('end_date') || request()->filled('status'))
+                                <span class="ml-2 text-purple-600 font-medium">
+                                    (Filter: 
+                                    @if(request()->filled('user_id'))
+                                        User: {{ App\Models\User::find(request()->user_id)->name ?? 'Unknown' }}
+                                    @endif
+                                    @if(request()->filled('start_date') && request()->filled('end_date'))
+                                        {{ request()->filled('user_id') ? ', ' : '' }}Tanggal: {{ \Carbon\Carbon::parse(request()->start_date)->format('d M Y') }} - {{ \Carbon\Carbon::parse(request()->end_date)->format('d M Y') }}
+                                    @elseif(request()->filled('start_date'))
+                                        {{ request()->filled('user_id') ? ', ' : '' }}Tanggal: {{ \Carbon\Carbon::parse(request()->start_date)->format('d M Y') }}+
+                                    @endif
+                                    @if(request()->filled('status'))
+                                        {{ (request()->filled('user_id') || request()->filled('start_date') || request()->filled('end_date')) ? ', ' : '' }}Status: {{ ucfirst(request()->status) }}
+                                    @endif
+                                    )
+                                </span>
+                            @endif
+                        </p>
                         <p class="text-xs text-purple-600 mt-1"><i class="fas fa-info-circle mr-1"></i>Klik pada baris karyawan untuk melihat grafik absensi bulanan</p>
                     </div>
                     <div class="flex items-center space-x-2">
@@ -685,6 +707,34 @@
         document.getElementById('exportEndDate').value = '';
         document.getElementById('exportStatus').value = '';
     }
+
+// View filtered absensi data
+function viewFilteredAbsensi() {
+    const userId = document.getElementById('exportUser').value;
+    const startDate = document.getElementById('exportStartDate').value;
+    const endDate = document.getElementById('exportEndDate').value;
+    const status = document.getElementById('exportStatus').value;
+    
+    // Build query string
+    const params = new URLSearchParams();
+    if (userId) params.append('user_id', userId);
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    if (status) params.append('status', status);
+    
+    // Redirect to current page with filter parameters
+    const currentUrl = new URL(window.location);
+    currentUrl.search = params.toString();
+    
+    // Show loading state
+    const viewBtn = event.target;
+    const originalText = viewBtn.innerHTML;
+    viewBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Loading...';
+    viewBtn.disabled = true;
+    
+    // Redirect to filtered view
+    window.location.href = currentUrl.toString();
+}
 
     // Export absensi with specific delimiter
     function exportAbsensiWithDelimiter(delimiter) {

@@ -102,6 +102,9 @@
                 </div>
                 
                 <div class="flex items-end space-x-2">
+                    <button type="button" onclick="viewFilteredData()" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                        <i class="fas fa-eye mr-2"></i>View
+                    </button>
                     <button type="button" onclick="exportWithDelimiter(',')" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                         <i class="fas fa-file-excel mr-2"></i>Export (,)
                     </button>
@@ -122,7 +125,23 @@
         <div class="flex justify-between items-center">
             <div>
                 <h3 class="text-lg font-medium text-gray-900">Daftar Laporan</h3>
-                <p class="text-sm text-gray-500 mt-1">{{ $reports->count() }} laporan terdaftar</p>
+                <p class="text-sm text-gray-500 mt-1">
+                    {{ $reports->count() }} laporan terdaftar
+                    @if(request()->filled('user_id') || request()->filled('start_date') || request()->filled('end_date'))
+                        <span class="ml-2 text-purple-600 font-medium">
+                            (Filter: 
+                            @if(request()->filled('user_id'))
+                                User: {{ App\Models\User::find(request()->user_id)->name ?? 'Unknown' }}
+                            @endif
+                            @if(request()->filled('start_date') && request()->filled('end_date'))
+                                {{ request()->filled('user_id') ? ', ' : '' }}Tanggal: {{ \Carbon\Carbon::parse(request()->start_date)->format('d M Y') }} - {{ \Carbon\Carbon::parse(request()->end_date)->format('d M Y') }}
+                            @elseif(request()->filled('start_date'))
+                                {{ request()->filled('user_id') ? ', ' : '' }}Tanggal: {{ \Carbon\Carbon::parse(request()->start_date)->format('d M Y') }}+
+                            @endif
+                            )
+                        </span>
+                    @endif
+                </p>
             </div>
             <div class="flex items-center space-x-2">
                 <a href="{{ route('admin.reports', ['date' => $previousDate]) }}" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
@@ -669,6 +688,32 @@ function resetExportFilters() {
     document.getElementById('exportUser').value = '';
     document.getElementById('exportStartDate').value = '';
     document.getElementById('exportEndDate').value = '';
+}
+
+// View filtered data
+function viewFilteredData() {
+    const userId = document.getElementById('exportUser').value;
+    const startDate = document.getElementById('exportStartDate').value;
+    const endDate = document.getElementById('exportEndDate').value;
+    
+    // Build query string
+    const params = new URLSearchParams();
+    if (userId) params.append('user_id', userId);
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    
+    // Redirect to current page with filter parameters
+    const currentUrl = new URL(window.location);
+    currentUrl.search = params.toString();
+    
+    // Show loading state
+    const viewBtn = event.target;
+    const originalText = viewBtn.innerHTML;
+    viewBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Loading...';
+    viewBtn.disabled = true;
+    
+    // Redirect to filtered view
+    window.location.href = currentUrl.toString();
 }
 
 // Export with specific delimiter
