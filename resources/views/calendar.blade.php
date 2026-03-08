@@ -98,6 +98,11 @@
                         <i class="fas fa-file-alt mr-2"></i>Daily Report
                     </a>
                     
+                    <!-- Marketing Report Menu -->
+                    <a href="{{ route('marketing-report') }}" class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 font-medium flex items-center">
+                        <i class="fas fa-bullhorn mr-2"></i>Marketing Report
+                    </a>
+                    
                     <!-- Calendar Menu -->
                     <a href="{{ route('calendar') }}" class="py-4 px-1 border-b-2 border-purple-500 text-purple-600 font-medium flex items-center">
                         <i class="fas fa-calendar mr-2"></i>Kalender
@@ -149,6 +154,11 @@
                 <!-- Daily Report Mobile Menu -->
                 <a href="{{ route('report') }}" class="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                     <i class="fas fa-file-alt mr-2"></i>Daily Report
+                </a>
+                
+                <!-- Marketing Report Mobile Menu -->
+                <a href="{{ route('marketing-report') }}" class="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i class="fas fa-bullhorn mr-2"></i>Marketing Report
                 </a>
                 
                 <!-- Calendar Mobile Menu -->

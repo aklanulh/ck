@@ -37,6 +37,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/report/history', [AuthController::class, 'showReportHistory'])->name('report.history');
     Route::get('/report/drafts', [AuthController::class, 'showDrafts'])->name('report.drafts');
 
+    // Marketing report routes
+    Route::get('/marketing-report', [AuthController::class, 'showMarketingReportForm'])->name('marketing-report');
+    Route::get('/marketing-report/edit/{id}', [AuthController::class, 'editMarketingReport'])->name('marketing-report.edit');
+    Route::post('/marketing-report/submit', [AuthController::class, 'submitMarketingReport'])->name('marketing-report.submit');
+    Route::post('/marketing-report/draft', [AuthController::class, 'saveMarketingDraft'])->name('marketing-report.draft');
+    Route::get('/marketing-reports/history', [AuthController::class, 'showMarketingReportsHistory'])->name('marketing-reports.history');
+    Route::get('/marketing-reports/drafts', [AuthController::class, 'showMarketingReportsDrafts'])->name('marketing-reports.drafts');
+
+    // API routes for marketing reports
+    Route::get('/api/marketing-reports/history', [AuthController::class, 'getMarketingReportsHistory']);
+    Route::get('/api/marketing-reports/drafts', [AuthController::class, 'getMarketingReportsDrafts']);
+    Route::get('/api/marketing-reports/{id}', [AuthController::class, 'getMarketingReportDetail']);
+    Route::delete('/api/marketing-reports/draft/{id}', [AuthController::class, 'deleteMarketingDraft']);
+
     // API routes for attendance
     Route::post('/api/check-in', [AuthController::class, 'checkIn']);
     Route::post('/api/check-out', [AuthController::class, 'checkOut']);
