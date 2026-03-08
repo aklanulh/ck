@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Absensi;
 use App\Models\Report;
 use App\Models\Izin;
+use App\Models\MarketingReport;
 
 class AuthController extends Controller
 {
@@ -747,7 +748,7 @@ class AuthController extends Controller
         try {
             $request->validate([
                 'jenis_izin' => 'required|in:izin,cuti,sakit',
-                'tanggal_mulai' => 'required|date|after_or_equal:today',
+                'tanggal_mulai' => 'required|date',
                 'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
                 'alasan' => 'required|string|max:500',
                 'bukti' => 'nullable|file|mimes:jpeg,jpg,png,pdf,doc,docx|max:10240'
@@ -845,6 +846,477 @@ class AuthController extends Controller
                     Storage::disk('public')->delete($photo['path']);
                 }
             }
+        }
+    }
+
+    /**
+     * Show marketing report form.
+     */
+    public function showMarketingReportForm()
+    {
+        $user = session('user');
+        if (!$user) {
+            return redirect('/login')->with('error', 'Please login first.');
+        }
+
+        return view('marketing-report');
+    }
+
+    /**
+     * Submit marketing report.
+     */
+    public function submitMarketingReport(Request $request)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized - Please login first'], 401);
+        }
+
+        $request->validate([
+            'tanggal' => 'required|date',
+            'locations' => 'required|array|min:1',
+            'locations.*.lokasi' => 'required|string|max:100',
+            'locations.*.nama_kontak' => 'required|string|max:100',
+            'locations.*.nomor_kontak' => 'required|string|max:20',
+            'locations.*.laporan' => 'required|string|max:2000',
+        ]);
+
+        try {
+            // Process locations data
+            $locationsData = [];
+            $locations = $request->input('locations', []);
+
+            foreach ($locations as $key => $location) {
+                // Handle photo uploads for each location
+                $photos = [];
+                $photoKey = 'location_photos_' . $key;
+
+                if ($request->hasFile($photoKey)) {
+                    foreach ($request->file($photoKey) as $photo) {
+                        $filename = 'marketing_photo_' . $user['id'] . '_' . date('Ymd_His') . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
+                        $path = $photo->storeAs('marketing-photos', $filename, 'public');
+
+                        $photos[] = [
+                            'path' => $path,
+                            'url' => Storage::url($path),
+                            'filename' => $filename
+                        ];
+                    }
+                }
+
+                $locationsData[] = [
+                    'lokasi' => $location['lokasi'],
+                    'nama_kontak' => $location['nama_kontak'],
+                    'nomor_kontak' => $location['nomor_kontak'],
+                    'laporan' => $location['laporan'],
+                    'photos' => $photos
+                ];
+            }
+
+            // Create marketing report
+            $marketingReport = MarketingReport::create([
+                'user_id' => $user['id'],
+                'tanggal' => $request->tanggal,
+                'lokasi' => $locationsData[0]['lokasi'] ?? '', // Use first location as main location
+                'locations_data' => json_encode($locationsData),
+                'total_locations' => count($locationsData),
+                'status' => 'submitted',
+            ]);
+
+            // Save each location to marketing_locations table for admin review
+            foreach ($locationsData as $locationData) {
+                $marketingReport->marketingLocations()->create([
+                    'lokasi' => $locationData['lokasi'],
+                    'nama_kontak' => $locationData['nama_kontak'],
+                    'nomor_kontak' => $locationData['nomor_kontak'],
+                    'laporan' => $locationData['laporan'],
+                    'photos' => json_encode($locationData['photos']),
+                ]);
+            }
+
+            Log::info('Marketing report submitted successfully', ['report_id' => $marketingReport->id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Laporan marketing berhasil dikirim!'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Submit marketing report error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Gagal mengirim laporan marketing: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Save marketing report as draft.
+     */
+    public function saveMarketingDraft(Request $request)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized - Please login first'], 401);
+        }
+
+        $request->validate([
+            'tanggal' => 'required|date',
+            'locations' => 'required|array|min:1',
+            'locations.*.lokasi' => 'required|string|max:100',
+            'locations.*.nama_kontak' => 'required|string|max:100',
+            'locations.*.nomor_kontak' => 'required|string|max:20',
+            'locations.*.laporan' => 'required|string|max:2000',
+        ]);
+
+        try {
+            // Process locations data
+            $locationsData = [];
+            $locations = $request->input('locations', []);
+
+            foreach ($locations as $key => $location) {
+                // Handle photo uploads for each location
+                $photos = [];
+                $photoKey = 'location_photos_' . $key;
+
+                if ($request->hasFile($photoKey)) {
+                    foreach ($request->file($photoKey) as $photo) {
+                        $filename = 'marketing_photo_' . $user['id'] . '_' . date('Ymd_His') . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
+                        $path = $photo->storeAs('marketing-photos', $filename, 'public');
+
+                        $photos[] = [
+                            'path' => $path,
+                            'url' => Storage::url($path),
+                            'filename' => $filename
+                        ];
+                    }
+                }
+
+                $locationsData[] = [
+                    'lokasi' => $location['lokasi'],
+                    'nama_kontak' => $location['nama_kontak'],
+                    'nomor_kontak' => $location['nomor_kontak'],
+                    'laporan' => $location['laporan'],
+                    'photos' => $photos
+                ];
+            }
+
+            // Check if draft already exists for this date and user
+            $existingDraft = MarketingReport::byUser($user['id'])
+                ->byDate($request->tanggal)
+                ->draft()
+                ->first();
+
+            if ($existingDraft) {
+                // Update existing draft
+                $existingDraft->update([
+                    'lokasi' => $locationsData[0]['lokasi'] ?? '', // Use first location as main location
+                    'locations_data' => json_encode($locationsData),
+                ]);
+
+                // Delete old locations and create new ones
+                $existingDraft->marketingLocations()->delete();
+                foreach ($locationsData as $locationData) {
+                    $existingDraft->marketingLocations()->create([
+                        'lokasi' => $locationData['lokasi'],
+                        'nama_kontak' => $locationData['nama_kontak'],
+                        'nomor_kontak' => $locationData['nomor_kontak'],
+                        'laporan' => $locationData['laporan'],
+                        'photos' => json_encode($locationData['photos']),
+                    ]);
+                }
+
+                Log::info('Marketing draft updated successfully', ['report_id' => $existingDraft->id]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Draft marketing berhasil diperbarui!'
+                ]);
+            } else {
+                // Create new draft
+                $marketingReport = MarketingReport::create([
+                    'user_id' => $user['id'],
+                    'tanggal' => $request->tanggal,
+                    'lokasi' => $locationsData[0]['lokasi'] ?? '', // Use first location as main location
+                    'locations_data' => json_encode($locationsData),
+                    'total_locations' => count($locationsData),
+                    'status' => 'draft',
+                ]);
+
+                // Save each location to marketing_locations table for admin review
+                foreach ($locationsData as $locationData) {
+                    $marketingReport->marketingLocations()->create([
+                        'lokasi' => $locationData['lokasi'],
+                        'nama_kontak' => $locationData['nama_kontak'],
+                        'nomor_kontak' => $locationData['nomor_kontak'],
+                        'laporan' => $locationData['laporan'],
+                        'photos' => json_encode($locationData['photos']),
+                    ]);
+                }
+
+                Log::info('Marketing draft created successfully', ['report_id' => $marketingReport->id]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Laporan marketing berhasil disimpan sebagai draft!'
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Save marketing draft error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Gagal menyimpan draft marketing: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get marketing reports history.
+     */
+    public function getMarketingReportsHistory(Request $request)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $reports = MarketingReport::with('user')
+                ->where('user_id', $user['id'])
+                ->submitted()
+                ->orderBy('tanggal', 'desc')
+                ->limit(50)
+                ->get()
+                ->map(function ($report) {
+                    return [
+                        'id' => $report->id,
+                        'lokasi' => $report->lokasi,
+                        'tanggal' => $report->tanggal->format('d M Y'),
+                        'total_locations' => $report->total_locations ?? 1,
+                        'status' => $report->status,
+                        'user_name' => $report->user->name ?? 'Unknown',
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $reports
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Get marketing history error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Gagal memuat riwayat laporan'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get marketing reports drafts.
+     */
+    public function getMarketingReportsDrafts(Request $request)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $drafts = MarketingReport::with('user')
+                ->where('user_id', $user['id'])
+                ->draft()
+                ->orderBy('updated_at', 'desc')
+                ->limit(20)
+                ->get()
+                ->map(function ($draft) {
+                    return [
+                        'id' => $draft->id,
+                        'lokasi' => $draft->lokasi,
+                        'tanggal' => $draft->tanggal->format('d M Y'),
+                        'total_locations' => $draft->total_locations ?? 1,
+                        'status' => $draft->status,
+                        'updated_at' => $draft->updated_at->format('d M Y H:i'),
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $drafts
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Get marketing drafts error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Gagal memuat draft laporan'
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete marketing draft.
+     */
+    public function deleteMarketingDraft($id)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $draft = MarketingReport::where('id', $id)
+                ->where('user_id', $user['id'])
+                ->draft()
+                ->first();
+
+            if (!$draft) {
+                return response()->json(['error' => 'Draft tidak ditemukan'], 404);
+            }
+
+            // Delete related locations first
+            $draft->marketingLocations()->delete();
+
+            // Delete photos from storage
+            $locations = $draft->locations ?? [];
+            foreach ($locations as $location) {
+                if (isset($location['photos'])) {
+                    foreach ($location['photos'] as $photo) {
+                        if (isset($photo['path'])) {
+                            Storage::disk('public')->delete($photo['path']);
+                        }
+                    }
+                }
+            }
+
+            // Delete the draft
+            $draft->delete();
+
+            Log::info('Marketing draft deleted', ['draft_id' => $id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Draft berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Delete marketing draft error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Gagal menghapus draft'
+            ], 500);
+        }
+    }
+
+    /**
+     * Show marketing reports history page.
+     */
+    public function showMarketingReportsHistory()
+    {
+        $user = session('user');
+        if (!$user) {
+            return redirect('/login')->with('error', 'Please login first.');
+        }
+
+        return view('marketing-reports-history');
+    }
+
+    /**
+     * Show marketing reports drafts page.
+     */
+    public function showMarketingReportsDrafts()
+    {
+        $user = session('user');
+        if (!$user) {
+            return redirect('/login')->with('error', 'Please login first.');
+        }
+
+        return view('marketing-reports-drafts');
+    }
+
+    /**
+     * Edit marketing report.
+     */
+    public function editMarketingReport($id)
+    {
+        $user = session('user');
+        if (!$user) {
+            return redirect('/login')->with('error', 'Please login first.');
+        }
+
+        try {
+            $report = MarketingReport::with(['user', 'marketingLocations'])
+                ->where('id', $id)
+                ->where('user_id', $user['id'])
+                ->first();
+
+            if (!$report) {
+                return redirect('/marketing-reports/drafts')->with('error', 'Draft tidak ditemukan');
+            }
+
+            if ($report->status === 'submitted') {
+                return redirect('/marketing-reports/history')->with('error', 'Laporan yang sudah dikirim tidak dapat diedit');
+            }
+
+            return view('marketing-report-edit', compact('report'));
+        } catch (\Exception $e) {
+            Log::error('Edit marketing report error: ' . $e->getMessage());
+            return redirect('/marketing-reports/drafts')->with('error', 'Gagal memuat laporan untuk diedit');
+        }
+    }
+
+    /**
+     * Get marketing report detail.
+     */
+    public function getMarketingReportDetail($id)
+    {
+        $user = session('user');
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        try {
+            $report = MarketingReport::with(['user', 'marketingLocations'])
+                ->where('id', $id)
+                ->where('user_id', $user['id'])
+                ->first();
+
+            if (!$report) {
+                return response()->json(['error' => 'Laporan tidak ditemukan'], 404);
+            }
+
+            // Process locations data safely
+            $locations = [];
+            if ($report->marketingLocations) {
+                $locations = $report->marketingLocations->map(function ($location) {
+                    $photos = $location->photos ?? [];
+                    // Ensure photos is always an array
+                    if (!is_array($photos)) {
+                        $photos = [];
+                    }
+
+                    return [
+                        'lokasi' => $location->lokasi ?? '',
+                        'nama_kontak' => $location->nama_kontak ?? '',
+                        'nomor_kontak' => $location->nomor_kontak ?? '',
+                        'laporan' => $location->laporan ?? '',
+                        'photos' => $photos
+                    ];
+                })->toArray();
+            }
+
+            $reportData = [
+                'id' => $report->id,
+                'lokasi' => $report->lokasi ?? '',
+                'tanggal' => $report->tanggal ? $report->tanggal->format('d M Y') : '',
+                'status' => $report->status ?? 'draft',
+                'total_locations' => $report->total_locations ?? 1,
+                'user_name' => $report->user->name ?? 'Unknown',
+                'created_at' => $report->created_at ? $report->created_at->format('d M Y H:i') : '',
+                'updated_at' => $report->updated_at ? $report->updated_at->format('d M Y H:i') : '',
+                'locations' => $locations
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $reportData
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Get marketing report detail error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Gagal memuat detail laporan'
+            ], 500);
         }
     }
 }
